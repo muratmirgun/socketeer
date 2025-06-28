@@ -6,16 +6,16 @@ import (
 )
 
 var (
-	version = "dev"
-	commit  = "unknown"
-	date    = "unknown"
+	buildVersion = "dev"
+	buildCommit  = "unknown"
+	buildDate    = "unknown"
 )
 
 func main() {
 	// Set version information
-	version.Version = version
-	version.Commit = commit
-	version.Date = date
+	version.Version = buildVersion
+	version.Commit = buildCommit
+	version.Date = buildDate
 	
 	commands.Execute()
 }
