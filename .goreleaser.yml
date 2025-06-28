@@ -16,8 +16,8 @@ builds:
     ldflags:
       - -s -w -X github.com/muratmirgun/socketeer/internal/version.Version={{.Version}} -X github.com/muratmirgun/socketeer/internal/version.Commit={{.Commit}} -X github.com/muratmirgun/socketeer/internal/version.Date={{.Date}}
     ignore:
-      - goos=windows
-        goarch=arm64
+      - goos: windows
+        goarch: arm64
 
 archives:
   - format: tar.gz
