@@ -1,0 +1,105 @@
+info:
+  title: wsdoc WebSocket API Docs
+  version: 1.0.0
+  description: Gerçek zamanlı WebSocket API dokümantasyonu
+  contact:
+    name: Murat
+    email: murat@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+sockets:
+  - name: ChatSocket
+    url: ws://localhost:8080/ws/chat
+    description: Kullanıcıların mesajlaştığı WebSocket kanalı
+    group: Messaging
+    tags:
+      - chat
+      - public
+    connectionParams:
+      - name: name
+        in: query
+        type: string
+        required: true
+        description: Kullanıcı adı
+    messages:
+      - type: sendMessage
+        direction: send
+        description: Kullanıcıdan mesaj gönderme
+        payload: {}
+        example: {}
+        errors:
+          - code: unauthorized
+            description: Kullanıcı yetkisiz
+          - code: invalid_format
+            description: Geçersiz mesaj formatı
+      - type: messageReceived
+        direction: receive
+        description: Sunucudan gelen mesaj
+        payload: {}
+  - name: NotificationSocket
+    url: ws://localhost:8080/ws/notify
+    description: Gerçek zamanlı bildirim kanalı
+    group: Notification
+    tags:
+      - notification
+      - private
+    connectionParams:
+      - name: session_id
+        in: query
+        type: string
+        required: true
+        description: Oturum ID
+    messages:
+      - type: subscribe
+        direction: send
+        description: Bildirim kanalına abone ol
+        payload: {}
+        example: {}
+      - type: notification
+        direction: receive
+        description: Sunucudan gelen bildirim
+        payload: {}
+  - name: PingPongSocket
+    url: /ws/ping
+    description: Ping-pong test endpoint. Ping gönder, pong cevabı al.
+    tags:
+      - test
+      - pingpong
+    messages:
+      - type: ping
+        direction: send
+        description: Ping mesajı gönder
+        payload: {}
+        example: {}
+      - type: pong
+        direction: receive
+        description: Pong cevabı
+        payload: {}
+  - name: CompanySocket
+    url: ws://localhost:8080/ws/company
+    description: Şirket ekleme WebSocket kanalı
+    group: Company
+    tags:
+      - company
+      - admin
+    connectionParams:
+      - name: name
+        in: query
+        type: string
+        required: true
+        description: Kullanıcı adı
+    messages:
+      - type: addCompany
+        direction: send
+        description: Yeni şirket ekle
+        payload:
+          name: string
+          status: 0
+        example: {}
+      - type: companyAdded
+        direction: receive
+        description: Şirket başarıyla eklendi
+        payload:
+          name: string
+          status: 0
