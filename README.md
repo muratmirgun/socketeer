@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./wsdocs/logo.png" alt="Socketeer Logo" width="180" />
+  <img src="https://github.com/muratmirgun/socketeer/blob/main/internal/templates/logo.png" alt="Socketeer Logo" width="180" />
 </p>
 
 # Socketeer
