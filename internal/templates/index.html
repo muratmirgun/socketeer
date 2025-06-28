@@ -90,6 +90,85 @@
       .socket-title { font-size: 1.05rem; }
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .example-block {
+      font-size: 0.95em;
+      max-height: 180px;
+      overflow: auto;
+      background: #f8f8f8;
+      border-radius: 4px;
+      padding: 0.5em;
+      margin-top: 0.3em;
+    }
+    .example-toggle {
+      margin-left: 0.5em;
+      font-size: 0.95em;
+      background: #e0e7ef;
+      border: none;
+      border-radius: 3px;
+      padding: 0.2em 0.7em;
+      cursor: pointer;
+      color: #2563eb;
+    }
+    .example-toggle:hover {
+      background: #dbeafe;
+    }
+    .messages-section {
+      margin-top: 0.7em;
+    }
+    .messages-toggle {
+      margin-bottom: 0.5em;
+      font-size: 1em;
+      background: #e0e7ef;
+      border: none;
+      border-radius: 3px;
+      padding: 0.3em 1em;
+      cursor: pointer;
+      color: #2563eb;
+    }
+    .messages-toggle:hover {
+      background: #dbeafe;
+    }
+    .msg-accordion {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin-bottom: 1em;
+      background: #f9fafb;
+      box-shadow: 0 1px 4px #0001;
+    }
+    .msg-header {
+      cursor: pointer;
+      padding: 0.7em 1em;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 1em;
+      background: #f1f5f9;
+      border-radius: 6px 6px 0 0;
+      transition: background 0.2s;
+    }
+    .msg-header.open, .msg-header:hover {
+      background: #e0e7ef;
+    }
+    .msg-type {
+      font-size: 0.98em;
+      font-weight: bold;
+      color: #2563eb;
+    }
+    .msg-title {
+      font-size: 1.08em;
+      color: #1e293b;
+    }
+    .msg-desc {
+      color: #64748b;
+      font-size: 0.97em;
+      margin-left: 0.7em;
+    }
+    .msg-details {
+      padding: 0.7em 1em 1em 1em;
+      background: #fff;
+      border-radius: 0 0 6px 6px;
+      border-top: 1px solid #e5e7eb;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
 </head>
@@ -197,21 +276,32 @@
                     <div style="margin-bottom:0.5em;">${socket.description || ''}</div>
                     <div class="socket-tags"><b>Tags:</b> ${(socket.tags||[]).join(', ')}</div>
                     <div class="socket-params"><b>Connection Params:</b> ${(socket.connectionParams||[]).map(p => `${p.name} <i>(${p.in}, ${p.type}${p.required ? ', required' : ''})</i>`).join(', ')}</div>
-                    <div class="msg-section">
-                      <div class="msg-header" onclick="toggleMsgList(${idx})">
-                        <span class="collapser" id="collapser-${idx}">▼</span>
-                        <b>Messages</b>
-                      </div>
-                      <div class="msg-list" id="msg-list-${idx}">
-                        ${(socket.messages||[]).map((msg, mIdx) => `
-                          <div class="msg">
-                            <span class="dir${msg.direction==='receive' ? ' receive' : ''}">[${msg.direction}]</span> <b>${msg.type}</b> <span style="color:var(--color-secondary)">${msg.description||''}</span>
-                            ${msg.deprecated ? `<span class='deprecated'>(Deprecated)</span>` : ''}
-                            <div><b>Payload:</b> <pre>${JSON.stringify(msg.payload, null, 2)}</pre></div>
-                            ${msg.example ? `<div><b>Example:</b> <pre>${JSON.stringify(msg.example, null, 2)}</pre></div>` : ''}
-                            ${(msg.errors||[]).length ? `<div class='error'><b>Errors:</b> ${(msg.errors||[]).map(e => `${e.code}: ${e.description}`).join(', ')}</div>` : ''}
+                    <div class="messages-section">
+                      <button class="messages-toggle" onclick="toggleMessages(this)">Show Messages</button>
+                      <div class="messages-section" style="display:none">
+                        <div class="msg-section">
+                          <div class="msg-header" onclick="toggleMsgList(${idx})">
+                            <span class="collapser" id="collapser-${idx}">▼</span>
+                            <b>Messages</b>
                           </div>
-                        `).join('')}
+                          <div class="msg-list" id="msg-list-${idx}">
+                            ${(socket.messages||[]).map((msg, mIdx) => `
+                              <div class="msg-accordion">
+                                <div class="msg-header" onclick="toggleMsgDetails(this)">
+                                  <span class="msg-type">[${msg.direction}]</span>
+                                  <span class="msg-title">${msg.type}</span>
+                                  <span class="msg-desc">${msg.description||''}</span>
+                                </div>
+                                <div class="msg-details" style="display:none">
+                                  <div><b>Payload:</b> <pre>${JSON.stringify(msg.payload, null, 2)}</pre></div>
+                                  <button class="example-toggle" onclick="toggleExample(this)">Show Example</button>
+                                  <pre class="example-block" style="display:none">${msg.example ? (typeof msg.example === 'string' ? msg.example : JSON.stringify(msg.example, null, 2)) : ''}</pre>
+                                  ${(msg.errors||[]).length ? `<div class='error'><b>Errors:</b> ${(msg.errors||[]).map(e => `${e.code}: ${e.description}`).join(', ')}</div>` : ''}
+                                </div>
+                              </div>
+                            `).join('')}
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div class="playground" id="playground-${idx}">
@@ -340,6 +430,7 @@
               <div class="log" id="log-${idx}-${clientId}"></div>
             `;
             clientsContainer.appendChild(panel);
+            scrollToNewClient();
             // Client state
             let ws = null;
             let connected = false;
@@ -473,6 +564,44 @@
           };
         });
       });
+    function toggleExample(btn) {
+      const pre = btn.nextElementSibling;
+      if (pre.style.display === 'none') {
+        pre.style.display = 'block';
+        btn.textContent = 'Hide Example';
+      } else {
+        pre.style.display = 'none';
+        btn.textContent = 'Show Example';
+      }
+    }
+    function toggleMessages(btn) {
+      const section = btn.nextElementSibling;
+      if (section.style.display === 'none') {
+        section.style.display = 'block';
+        btn.textContent = 'Hide Messages';
+      } else {
+        section.style.display = 'none';
+        btn.textContent = 'Show Messages';
+      }
+    }
+    function toggleMsgDetails(header) {
+      const details = header.nextElementSibling;
+      if (details.style.display === 'none') {
+        details.style.display = 'block';
+        header.classList.add('open');
+      } else {
+        details.style.display = 'none';
+        header.classList.remove('open');
+      }
+    }
+    function scrollToNewClient() {
+      setTimeout(() => {
+        const clients = document.querySelectorAll('.client-panel');
+        if (clients.length) {
+          clients[clients.length-1].scrollIntoView({behavior: 'smooth', block: 'center'});
+        }
+      }, 100);
+    }
   </script>
 </body>
 </html> 

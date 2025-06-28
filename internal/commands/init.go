@@ -19,19 +19,21 @@ var initCmd = &cobra.Command{
 	Short: "Initialize wsdoc project (creates wsdocs/ with base files)",
 	Long:  `Creates a wsdocs/ directory with base wsapi.yaml and index.html for your WebSocket API docs project.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if _, err := os.Stat("wsdocs"); err == nil {
-			fmt.Println("wsdocs/ already exists. Aborting.")
-			return
+		// Create wsdocs directory if it doesn't exist
+		if _, err := os.Stat("wsdocs"); os.IsNotExist(err) {
+			os.Mkdir("wsdocs", 0755)
+			fmt.Println("Created wsdocs/ directory.")
+		} else {
+			fmt.Println("wsdocs/ directory already exists. Updating files...")
 		}
-				
-		os.Mkdir("wsdocs", 0755)
 		
 		// Download files from GitHub
 		files := []string{"index.html", "wsapi.yaml", "logo.png"}
 		
 		for _, file := range files {
 			fmt.Printf("Downloading %s...\n", file)
-			err := downloadFile(filepath.Join(baseURL, file), filepath.Join("wsdocs", file))
+			url := baseURL + "/" + file
+			err := downloadFile(url, filepath.Join("wsdocs", file))
 			if err != nil {
 				fmt.Printf("Error downloading %s: %v\n", file, err)
 				return
