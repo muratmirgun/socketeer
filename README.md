@@ -23,19 +23,6 @@ Download the latest release for your platform from [GitHub Releases](https://git
 go install github.com/muratmirgun/socketeer@latest
 ```
 
-### Using Homebrew (macOS/Linux)
-
-```sh
-brew install muratmirgun/tap/socketeer
-```
-
-### Using Docker
-
-```sh
-docker pull ghcr.io/muratmirgun/socketeer:latest
-docker run -p 8080:8080 ghcr.io/muratmirgun/socketeer:latest
-```
-
 ---
 
 ## Features
