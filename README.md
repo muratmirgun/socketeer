@@ -11,6 +11,33 @@ It parses special annotations in your Go code and produces a `wsapi.yaml` spec, 
 
 ---
 
+## Installation
+
+### From GitHub Releases
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/muratmirgun/socketeer/releases).
+
+### Using Go
+
+```sh
+go install github.com/muratmirgun/socketeer@latest
+```
+
+### Using Homebrew (macOS/Linux)
+
+```sh
+brew install muratmirgun/tap/socketeer
+```
+
+### Using Docker
+
+```sh
+docker pull ghcr.io/muratmirgun/socketeer:latest
+docker run -p 8080:8080 ghcr.io/muratmirgun/socketeer:latest
+```
+
+---
+
 ## Features
 
 - **Swagger-style API info annotations** (title, version, description, contact, license)
@@ -28,12 +55,21 @@ It parses special annotations in your Go code and produces a `wsapi.yaml` spec, 
 ## Quick Start
 
 ```sh
-go install github.com/yourusername/socketeer@latest
+# Install socketeer
+go install github.com/muratmirgun/socketeer@latest
+
+# Navigate to your Go project
 cd your-go-project
+
+# Initialize socketeer project
 socketeer init
+
 # Add annotations to your Go code (see below)
 socketeer generate --src ./ --out ./wsdocs/wsapi.yaml
+
+# Serve the documentation
 socketeer serve
+
 # Open http://localhost:8080 in your browser
 ```
 
@@ -108,12 +144,36 @@ type ReqAddCompany struct {
 ## CLI Usage
 
 ```sh
-socketeer init
-socketeer generate --src ./ --out ./wsdocs/wsapi.yaml
-socketeer serve
-socketeer validate
-socketeer fmt
-socketeer version
+socketeer init                    # Initialize a new socketeer project
+socketeer generate --src ./ --out ./wsdocs/wsapi.yaml  # Generate spec from Go code
+socketeer serve                   # Serve documentation and playground
+socketeer validate                # Validate wsapi.yaml file
+socketeer fmt                     # Format wsapi.yaml file
+socketeer version                 # Show version information
+```
+
+---
+
+## Development
+
+### Building from Source
+
+```sh
+git clone https://github.com/muratmirgun/socketeer.git
+cd socketeer
+go build -o socketeer .
+```
+
+### Running Tests
+
+```sh
+go test -v ./...
+```
+
+### Linting
+
+```sh
+golangci-lint run
 ```
 
 ---

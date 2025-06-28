@@ -3,9 +3,15 @@ package commands
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+)
+
+const (
+	baseURL = "https://raw.githubusercontent.com/muratmirgun/socketeer/main/internal/templates"
 )
 
 var initCmd = &cobra.Command{
@@ -17,25 +23,43 @@ var initCmd = &cobra.Command{
 			fmt.Println("wsdocs/ already exists. Aborting.")
 			return
 		}
+				
 		os.Mkdir("wsdocs", 0755)
-		copyFile("internal/templates/index.html", "wsdocs/index.html")
-		copyFile("internal/templates/wsapi.yaml", "wsdocs/wsapi.yaml")
-		fmt.Println("Initialized wsdocs/ with index.html and wsapi.yaml.")
+		
+		// Download files from GitHub
+		files := []string{"index.html", "wsapi.yaml", "logo.png"}
+		
+		for _, file := range files {
+			fmt.Printf("Downloading %s...\n", file)
+			err := downloadFile(filepath.Join(baseURL, file), filepath.Join("wsdocs", file))
+			if err != nil {
+				fmt.Printf("Error downloading %s: %v\n", file, err)
+				return
+			}
+		}
+		
+		fmt.Println("Initialized wsdocs/ with index.html, wsapi.yaml, and logo.png.")
 	},
 }
 
-func copyFile(src, dst string) error {
-	srcF, err := os.Open(src)
+func downloadFile(url, dst string) error {
+	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
-	defer srcF.Close()
-	dstF, err := os.Create(dst)
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP error: %d", resp.StatusCode)
+	}
+	
+	file, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer dstF.Close()
-	_, err = io.Copy(dstF, srcF)
+	defer file.Close()
+	
+	_, err = io.Copy(file, resp.Body)
 	return err
 }
 
