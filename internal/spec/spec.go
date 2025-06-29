@@ -36,6 +36,7 @@ type Socket struct {
 	Tags             []string          `yaml:"tags,omitempty" json:"tags,omitempty"`
 	ConnectionParams []ConnectionParam `yaml:"connectionParams,omitempty" json:"connectionParams,omitempty"`
 	Messages         []Message         `yaml:"messages" json:"messages"`
+	GroupedMessages  []GroupedMessage  `yaml:"groupedMessages,omitempty" json:"groupedMessages,omitempty"`
 }
 
 // ConnectionParam represents a connection parameter for a WebSocket endpoint.
@@ -55,6 +56,16 @@ type Message struct {
 	Payload     interface{} `yaml:"payload" json:"payload"`
 	Example     interface{} `yaml:"example,omitempty" json:"example,omitempty"`
 	Errors      []Error     `yaml:"errors,omitempty" json:"errors,omitempty"`
+	Deprecated  bool        `yaml:"deprecated,omitempty" json:"deprecated,omitempty"`
+	Tags        []string    `yaml:"tags,omitempty" json:"tags,omitempty"`
+}
+
+// GroupedMessage represents a message type that can have both send and receive directions
+type GroupedMessage struct {
+	Type        string      `yaml:"type" json:"type"`
+	Description string      `yaml:"description,omitempty" json:"description,omitempty"`
+	Send        *Message    `yaml:"send,omitempty" json:"send,omitempty"`
+	Receive     *Message    `yaml:"receive,omitempty" json:"receive,omitempty"`
 	Deprecated  bool        `yaml:"deprecated,omitempty" json:"deprecated,omitempty"`
 	Tags        []string    `yaml:"tags,omitempty" json:"tags,omitempty"`
 }

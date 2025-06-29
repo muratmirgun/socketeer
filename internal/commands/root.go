@@ -8,10 +8,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "wsdoc",
-	Short:   "wsdoc - WebSocket API doc & playground generator",
-	Long:    `wsdoc is a modern, Swagger-like documentation and playground generator for WebSocket APIs in Go.`,
-	Example: `  wsdoc init\n  wsdoc generate --src ./ --out ./wsdocs/wsapi.yaml\n  wsdoc serve\n  wsdoc validate\n  wsdoc fmt\n  wsdoc version`,
+	Use:     "socketeer",
+	Short:   "socketeer - WebSocket API doc & playground generator",
+	Long:    `socketeer is a modern, Swagger-like documentation and playground generator for WebSocket APIs in Go.`,
+	Example: `  socketeer init\n  socketeer generate --src ./ --out ./wsdocs/wsapi.yaml\n  socketeer serve\n  socketeer validate\n  socketeer fmt\n  socketeer version`,
 }
 
 // Execute runs the root command.

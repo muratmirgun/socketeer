@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"bufio"
+	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -8,11 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
-
-	"encoding/json"
-
-	"bufio"
 
 	"github.com/muratmirgun/socketeer/internal/spec"
 	"gopkg.in/yaml.v3"
@@ -122,7 +121,7 @@ func CollectStructs(dir string) map[string]StructInfo {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return nil
 		}
-		file, err := parser.ParseFile(fset, path, nil, 0)
+		file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
 		if err != nil {
 			return nil
 		}
@@ -154,26 +153,69 @@ func CollectStructs(dir string) map[string]StructInfo {
 					if jsonName == "" || jsonName == "-" {
 						continue
 					}
-					// Basit örnek değerler
-					var example interface{} = ""
-					switch ft := f.Type.(type) {
-					case *ast.Ident:
-						t := ft.Name
-						if t == "string" {
-							example = "string"
-						} else if t == "int" || t == "int64" || t == "int32" {
-							example = 0
-						} else if t == "bool" {
-							example = false
-						} else {
-							example = t
+					// Try to extract Example comment
+					example := ""
+					if f.Doc != nil {
+						for _, c := range f.Doc.List {
+							line := strings.TrimSpace(strings.TrimPrefix(c.Text, "//"))
+							if strings.HasPrefix(line, "Example:") {
+								ex := strings.TrimSpace(strings.TrimPrefix(line, "Example:"))
+								if len(ex) > 0 {
+									example = ex
+								}
+							}
 						}
-					case *ast.ArrayType:
-						example = []interface{}{}
-					case *ast.MapType:
-						example = map[string]interface{}{}
 					}
-					fields[jsonName] = example
+					if example == "" && f.Comment != nil {
+						for _, c := range f.Comment.List {
+							line := strings.TrimSpace(strings.TrimPrefix(c.Text, "//"))
+							if strings.HasPrefix(line, "Example:") {
+								ex := strings.TrimSpace(strings.TrimPrefix(line, "Example:"))
+								if len(ex) > 0 {
+									example = ex
+								}
+							}
+						}
+					}
+					if example != "" {
+						// Remove leading and trailing double quotes if present
+						if strings.HasPrefix(example, "\"") && strings.HasSuffix(example, "\"") && len(example) > 1 {
+							example = strings.TrimPrefix(example, "\"")
+							example = strings.TrimSuffix(example, "\"")
+						}
+						// Try to parse as int, float, or JSON, fallback to string
+						var v interface{} = example
+						if i, err := strconv.ParseInt(example, 10, 64); err == nil {
+							v = i
+						} else if f, err := strconv.ParseFloat(example, 64); err == nil {
+							v = f
+						} else if (strings.HasPrefix(example, "{") && strings.HasSuffix(example, "}")) || (strings.HasPrefix(example, "[") && strings.HasSuffix(example, "]")) {
+							var j interface{}
+							if err := json.Unmarshal([]byte(example), &j); err == nil {
+								v = j
+							}
+						}
+						fields[jsonName] = v
+					} else {
+						// Fallback: old logic
+						switch ft := f.Type.(type) {
+						case *ast.Ident:
+							t := ft.Name
+							if t == "string" {
+								fields[jsonName] = "string"
+							} else if t == "int" || t == "int64" || t == "int32" {
+								fields[jsonName] = 0
+							} else if t == "bool" {
+								fields[jsonName] = false
+							} else {
+								fields[jsonName] = t
+							}
+						case *ast.ArrayType:
+							fields[jsonName] = []interface{}{}
+						case *ast.MapType:
+							fields[jsonName] = map[string]interface{}{}
+						}
+					}
 				}
 				structs[ts.Name.Name] = StructInfo{Fields: fields}
 				structs[pkg+"."+ts.Name.Name] = StructInfo{Fields: fields}
@@ -184,47 +226,18 @@ func CollectStructs(dir string) map[string]StructInfo {
 	return structs
 }
 
-// parseSocketBlock parses a block of annotations into a Socket struct (stub for now).
+// parseSocketBlock parses a block of annotations into a Socket struct (supports grouped @Send/@Receive).
 func parseSocketBlock(block []string) *spec.Socket {
 	socket := &spec.Socket{}
-	var currentMsg *spec.Message
-	var inPayload, inExample bool
-	var payloadLines, exampleLines []string
-
-	// struct haritasını bir kez topla
 	structMap := CollectStructs("./")
+	messageGroups := make(map[string]*spec.GroupedMessage)
+
+	var currentMsg *spec.Message
+	var currentType string
+	var currentDirection string
 
 	for i := 0; i < len(block); i++ {
 		line := block[i]
-		if inPayload {
-			if strings.HasPrefix(line, "@") && !strings.HasPrefix(line, "@Payload") {
-				inPayload = false
-				payload := parseJSONBlock(payloadLines)
-				if currentMsg != nil {
-					currentMsg.Payload = payload
-				}
-				payloadLines = nil
-				// Continue to parse this line as a new annotation
-			} else {
-				payloadLines = append(payloadLines, strings.TrimPrefix(line, "// "))
-				continue
-			}
-		}
-		if inExample {
-			if strings.HasPrefix(line, "@") && !strings.HasPrefix(line, "@Example") {
-				inExample = false
-				example := parseJSONBlock(exampleLines)
-				if currentMsg != nil {
-					currentMsg.Example = example
-				}
-				exampleLines = nil
-				// Continue to parse this line as a new annotation
-			} else {
-				exampleLines = append(exampleLines, strings.TrimPrefix(line, "// "))
-				continue
-			}
-		}
-
 		fields := strings.Fields(line)
 		if len(fields) == 0 {
 			continue
@@ -278,35 +291,111 @@ func parseSocketBlock(block []string) *spec.Socket {
 				socket.ConnectionParams = append(socket.ConnectionParams, param)
 			}
 		case "@Message":
-			if currentMsg != nil {
-				socket.Messages = append(socket.Messages, *currentMsg)
-			}
-			currentMsg = &spec.Message{Type: ""}
-			if len(fields) > 1 {
-				currentMsg.Type = fields[1]
-			}
-		case "@Direction":
-			if currentMsg != nil && len(fields) > 1 {
-				currentMsg.Direction = fields[1]
-			}
-		case "@Payload":
-			// Eğer struct ismi verilmişse, onu kullan
-			if len(fields) == 2 {
-				structName := fields[1]
-				if s, ok := structMap[structName]; ok {
-					if currentMsg != nil {
-						currentMsg.Payload = s.Fields
+			// Add previous message to grouped structure if exists
+			if currentMsg != nil && currentType != "" && currentDirection != "" {
+				if currentDirection == "send" {
+					messageGroups[currentType].Send = currentMsg
+					if messageGroups[currentType].Description == "" {
+						messageGroups[currentType].Description = currentMsg.Description
 					}
-					inPayload = false
-					continue
+				} else if currentDirection == "receive" {
+					messageGroups[currentType].Receive = currentMsg
+					if messageGroups[currentType].Description == "" {
+						messageGroups[currentType].Description = currentMsg.Description
+					}
 				}
 			}
-			// Eski JSON block mantığı
-			inPayload = true
-			payloadLines = nil
-		case "@Example":
-			inExample = true
-			exampleLines = nil
+			currentType = ""
+			if len(fields) > 1 {
+				currentType = fields[1]
+			}
+			if messageGroups[currentType] == nil {
+				messageGroups[currentType] = &spec.GroupedMessage{Type: currentType}
+			}
+		case "@Send":
+			// Add previous message to grouped structure if exists
+			if currentMsg != nil && currentType != "" && currentDirection != "" {
+				if currentDirection == "send" {
+					messageGroups[currentType].Send = currentMsg
+					if messageGroups[currentType].Description == "" {
+						messageGroups[currentType].Description = currentMsg.Description
+					}
+				} else if currentDirection == "receive" {
+					messageGroups[currentType].Receive = currentMsg
+					if messageGroups[currentType].Description == "" {
+						messageGroups[currentType].Description = currentMsg.Description
+					}
+				}
+			}
+			currentDirection = "send"
+			currentMsg = &spec.Message{Type: currentType, Direction: "send"}
+		case "@Receive":
+			// Add previous message to grouped structure if exists
+			if currentMsg != nil && currentType != "" && currentDirection != "" {
+				if currentDirection == "send" {
+					messageGroups[currentType].Send = currentMsg
+					if messageGroups[currentType].Description == "" {
+						messageGroups[currentType].Description = currentMsg.Description
+					}
+				} else if currentDirection == "receive" {
+					messageGroups[currentType].Receive = currentMsg
+					if messageGroups[currentType].Description == "" {
+						messageGroups[currentType].Description = currentMsg.Description
+					}
+				}
+			}
+			currentDirection = "receive"
+			currentMsg = &spec.Message{Type: currentType, Direction: "receive"}
+		case "@Payload":
+			if currentMsg != nil {
+				payloadArg := strings.TrimSpace(strings.TrimPrefix(line, "@Payload"))
+				if payloadArg != "" {
+					// Check if it's inline JSON (starts with { or [)
+					if strings.HasPrefix(payloadArg, "{") || strings.HasPrefix(payloadArg, "[") {
+						// Parse inline JSON
+						var jsonPayload interface{}
+						if err := json.Unmarshal([]byte(payloadArg), &jsonPayload); err == nil {
+							if b, err := json.Marshal(jsonPayload); err == nil {
+								currentMsg.Payload = string(b)
+							} else {
+								currentMsg.Payload = jsonPayload
+							}
+						} else {
+							currentMsg.Payload = payloadArg // fallback to raw string
+						}
+					} else {
+						// Treat as struct name
+						structName := payloadArg
+						found := false
+						if s, ok := structMap[structName]; ok {
+							if s.Fields != nil {
+								if b, err := json.Marshal(s.Fields); err == nil {
+									currentMsg.Payload = string(b)
+								} else {
+									currentMsg.Payload = s.Fields // fallback
+								}
+							}
+							found = true
+						}
+						if !found {
+							for k, s := range structMap {
+								if strings.HasSuffix(k, "."+structName) {
+									if s.Fields != nil {
+										if b, err := json.Marshal(s.Fields); err == nil {
+											currentMsg.Payload = string(b)
+										} else {
+											currentMsg.Payload = s.Fields
+										}
+									}
+									found = true
+									break
+								}
+							}
+						}
+						// If not found, do not attempt fuzzy/contains match. Leave payload empty or log warning.
+					}
+				}
+			}
 		case "@Error":
 			if currentMsg != nil && len(fields) > 1 {
 				err := spec.Error{Code: fields[1]}
@@ -321,8 +410,32 @@ func parseSocketBlock(block []string) *spec.Socket {
 			}
 		}
 	}
-	if currentMsg != nil {
-		socket.Messages = append(socket.Messages, *currentMsg)
+	// Add the last message if exists
+	if currentMsg != nil && currentType != "" && currentDirection != "" {
+		if currentDirection == "send" {
+			messageGroups[currentType].Send = currentMsg
+			if messageGroups[currentType].Description == "" {
+				messageGroups[currentType].Description = currentMsg.Description
+			}
+		} else if currentDirection == "receive" {
+			messageGroups[currentType].Receive = currentMsg
+			if messageGroups[currentType].Description == "" {
+				messageGroups[currentType].Description = currentMsg.Description
+			}
+		}
+	}
+	// Convert grouped messages to slice and add to socket
+	for _, groupedMsg := range messageGroups {
+		socket.GroupedMessages = append(socket.GroupedMessages, *groupedMsg)
+	}
+	// For backward compatibility, also populate the old Messages field
+	for _, groupedMsg := range socket.GroupedMessages {
+		if groupedMsg.Send != nil {
+			socket.Messages = append(socket.Messages, *groupedMsg.Send)
+		}
+		if groupedMsg.Receive != nil {
+			socket.Messages = append(socket.Messages, *groupedMsg.Receive)
+		}
 	}
 	return socket
 }

@@ -169,6 +169,66 @@
       border-radius: 0 0 6px 6px;
       border-top: 1px solid #e5e7eb;
     }
+    .wsmsg-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 1.2em;
+      background: #fff;
+      box-shadow: 0 1px 6px #0001;
+      padding: 1.1em 1.2em 1.2em 1.2em;
+    }
+    .wsmsg-header {
+      display: flex;
+      align-items: center;
+      gap: 1em;
+      margin-bottom: 0.3em;
+    }
+    .wsmsg-badge {
+      color: #fff;
+      font-weight: bold;
+      border-radius: 4px;
+      padding: 0.2em 0.8em;
+      font-size: 1em;
+      letter-spacing: 0.03em;
+      display: inline-block;
+    }
+    .wsmsg-type {
+      font-size: 1.13em;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .wsmsg-desc {
+      color: #64748b;
+      font-size: 1em;
+      margin-bottom: 0.5em;
+    }
+    .wsmsg-section {
+      margin-bottom: 0.5em;
+    }
+    .wsmsg-payload {
+      background: #f8fafc;
+      border-radius: 4px;
+      padding: 0.5em;
+      font-size: 0.98em;
+      margin: 0.2em 0 0 0;
+      overflow-x: auto;
+    }
+    .wsmsg-errors {
+      margin-top: 0.5em;
+    }
+    .wsmsg-err-badge {
+      background: #f87171;
+      color: #fff;
+      border-radius: 3px;
+      padding: 0.1em 0.7em;
+      font-size: 0.95em;
+      margin-right: 0.7em;
+    }
+    .wsmsg-err {
+      color: #f87171;
+      margin-right: 0.7em;
+      font-size: 0.98em;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
 </head>
@@ -285,21 +345,80 @@
                             <b>Messages</b>
                           </div>
                           <div class="msg-list" id="msg-list-${idx}">
-                            ${(socket.messages||[]).map((msg, mIdx) => `
-                              <div class="msg-accordion">
-                                <div class="msg-header" onclick="toggleMsgDetails(this)">
-                                  <span class="msg-type">[${msg.direction}]</span>
-                                  <span class="msg-title">${msg.type}</span>
-                                  <span class="msg-desc">${msg.description||''}</span>
-                                </div>
-                                <div class="msg-details" style="display:none">
-                                  <div><b>Payload:</b> <pre>${JSON.stringify(msg.payload, null, 2)}</pre></div>
-                                  <button class="example-toggle" onclick="toggleExample(this)">Show Example</button>
-                                  <pre class="example-block" style="display:none">${msg.example ? (typeof msg.example === 'string' ? msg.example : JSON.stringify(msg.example, null, 2)) : ''}</pre>
-                                  ${(msg.errors||[]).length ? `<div class='error'><b>Errors:</b> ${(msg.errors||[]).map(e => `${e.code}: ${e.description}`).join(', ')}</div>` : ''}
-                                </div>
-                              </div>
-                            `).join('')}
+                            ${(() => {
+                              // Robustly detect groupedMessages regardless of YAML casing
+                              let grouped = socket.groupedMessages || socket.groupedmessages;
+                              if (grouped && grouped.length && (grouped[0].send || grouped[0].receive)) {
+                                // New grouped message structure
+                                return grouped.map((groupedMsg, mIdx) => {
+                                  const hasSend = groupedMsg.send;
+                                  const hasReceive = groupedMsg.receive;
+                                  const sendMsg = groupedMsg.send;
+                                  const receiveMsg = groupedMsg.receive;
+                                  let sendBadgeColor = '#2563eb';
+                                  let receiveBadgeColor = '#16a34a';
+                                  if (sendMsg && ((sendMsg.type||'').toLowerCase().includes('error') || (sendMsg.description||'').toLowerCase().includes('error'))) sendBadgeColor = '#f87171';
+                                  if (receiveMsg && ((receiveMsg.type||'').toLowerCase().includes('error') || (receiveMsg.description||'').toLowerCase().includes('error'))) receiveBadgeColor = '#f87171';
+                                  return `
+                                    <div class="wsmsg-card">
+                                      <div class="wsmsg-header">
+                                        ${hasSend ? `<span class="wsmsg-badge" style="background:${sendBadgeColor}">[send]</span>` : ''}
+                                        ${hasReceive ? `<span class="wsmsg-badge" style="background:${receiveBadgeColor}">[receive]</span>` : ''}
+                                        <span class="wsmsg-type">${groupedMsg.type}</span>
+                                      </div>
+                                      <div class="wsmsg-desc">${groupedMsg.description||''}</div>
+                                      <button class="example-toggle" onclick="toggleExample(this)">Show Payload & Example</button>
+                                      <div class="example-block" style="display:none">
+                                        ${hasSend ? `
+                                          <div class="wsmsg-section">
+                                            <b>Send Payload:</b>
+                                            <pre class="wsmsg-payload">${JSON.stringify(sendMsg.payload, null, 2)}</pre>
+                                            ${sendMsg.example ? `
+                                              <b>Send Example:</b>
+                                              <pre class="wsmsg-payload">${typeof sendMsg.example === 'string' ? sendMsg.example : JSON.stringify(sendMsg.example, null, 2)}</pre>
+                                            ` : ''}
+                                            ${(sendMsg.errors||[]).length ? `<div class='wsmsg-errors'><span class='wsmsg-err-badge'>Send Errors</span> ${(sendMsg.errors||[]).map(e => `<span class='wsmsg-err'>${e.code}: ${e.description}</span>`).join('')}</div>` : ''}
+                                          </div>
+                                        ` : ''}
+                                        ${hasReceive ? `
+                                          <div class="wsmsg-section">
+                                            <b>Receive Payload:</b>
+                                            <pre class="wsmsg-payload">${JSON.stringify(receiveMsg.payload, null, 2)}</pre>
+                                            ${receiveMsg.example ? `
+                                              <b>Receive Example:</b>
+                                              <pre class="wsmsg-payload">${typeof receiveMsg.example === 'string' ? receiveMsg.example : JSON.stringify(receiveMsg.example, null, 2)}</pre>
+                                            ` : ''}
+                                            ${(receiveMsg.errors||[]).length ? `<div class='wsmsg-errors'><span class='wsmsg-err-badge'>Receive Errors</span> ${(receiveMsg.errors||[]).map(e => `<span class='wsmsg-err'>${e.code}: ${e.description}</span>`).join('')}</div>` : ''}
+                                          </div>
+                                        ` : ''}
+                                      </div>
+                                    </div>
+                                  `;
+                                }).join('');
+                              } else {
+                                // Fallback to old message structure for backward compatibility
+                                const messages = socket.messages || [];
+                                return messages.map((msg, mIdx) => {
+                                  let badgeColor = msg.direction === 'send' ? '#2563eb' : (msg.direction === 'receive' ? '#16a34a' : '#64748b');
+                                  if ((msg.type||'').toLowerCase().includes('error') || (msg.description||'').toLowerCase().includes('error')) badgeColor = '#f87171';
+                                  return `
+                                    <div class="wsmsg-card">
+                                      <div class="wsmsg-header">
+                                        <span class="wsmsg-badge" style="background:${badgeColor}">[${msg.direction}]</span>
+                                        <span class="wsmsg-type">${msg.type}</span>
+                                      </div>
+                                      <div class="wsmsg-desc">${msg.description||''}</div>
+                                      <div class="wsmsg-section"><b>Payload:</b>
+                                        <pre class="wsmsg-payload">${JSON.stringify(msg.payload, null, 2)}</pre>
+                                      </div>
+                                      <button class="example-toggle" onclick="toggleExample(this)">Show Example</button>
+                                      <pre class="example-block" style="display:none">${msg.example ? (typeof msg.example === 'string' ? msg.example : JSON.stringify(msg.example, null, 2)) : ''}</pre>
+                                      ${(msg.errors||[]).length ? `<div class='wsmsg-errors'><span class='wsmsg-err-badge'>Errors</span> ${(msg.errors||[]).map(e => `<span class='wsmsg-err'>${e.code}: ${e.description}</span>`).join('')}</div>` : ''}
+                                    </div>
+                                  `;
+                                }).join('');
+                              }
+                            })()}
                           </div>
                         </div>
                       </div>
