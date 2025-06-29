@@ -11,6 +11,12 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/muratmirgun/socketeer)](https://goreportcard.com/report/github.com/muratmirgun/socketeer)
 [![Release](https://img.shields.io/github/v/release/muratmirgun/socketeer)](https://github.com/muratmirgun/socketeer/releases)
 
+<p align="center">
+  <img src="https://github.com/muratmirgun/socketeer/blob/main/banner.png" alt="Socketeer UI Showcase" width="100%" />
+  <br/>
+  <em>Modern, interactive WebSocket API documentation and playground UI</em>
+</p>
+
 Socketeer is an open-source tool that generates interactive, Swagger-like documentation and playgrounds for your WebSocket APIs in Go.  
 It parses special annotations in your Go code and produces a `wsapi.yaml` spec, which is visualized in a beautiful, build-free frontend.
 
