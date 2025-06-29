@@ -1,726 +1,1729 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>wsdoc - WebSocket API Docs</title>
-  <style>
-    :root {
-      --color-bg: #f8fafc;
-      --color-fg: #1e293b;
-      --color-card: #fff;
-      --color-border: #e5e7eb;
-      --color-primary: #2563eb;
-      --color-secondary: #64748b;
-      --color-accent: #16a34a;
-      --color-error: #f87171;
-      --color-muted: #e0e7ef;
-      --color-header: #f1f5f9;
-    }
-    [data-theme="dark"] {
-      --color-bg: #181a20;
-      --color-fg: #f3f4f6;
-      --color-card: #23272e;
-      --color-border: #2d323c;
-      --color-primary: #60a5fa;
-      --color-secondary: #a1a1aa;
-      --color-accent: #22d3ee;
-      --color-error: #f87171;
-      --color-muted: #23272e;
-      --color-header: #23272e;
-    }
-    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: var(--color-bg); color: var(--color-fg); }
-    .container { max-width: 900px; margin: 2rem auto; background: var(--color-card); border-radius: 10px; box-shadow: 0 2px 12px #0002; padding: 2rem; }
-    .api-info-header { box-shadow: 0 2px 8px #0001; border-radius: 8px; background: var(--color-header); padding: 1.2em 1.5em; margin-bottom: 2.2rem; display:flex;align-items:center;gap:1.5em; }
-    .api-info-header h1 { color: var(--color-primary); margin-bottom: 0.2em; font-size: 2.1em; }
-    .theme-switcher { margin-left:auto; cursor:pointer; background:var(--color-muted); border:none; border-radius:50%; width:40px; height:40px; display:flex;align-items:center;justify-content:center; transition:background 0.2s; }
-    .theme-switcher:hover { background:var(--color-border); }
-    /* API Info Header */
-    .api-info-header { box-shadow: 0 2px 8px #0001; border-radius: 8px; background: #f1f5f9; padding: 1.2em 1.5em; margin-bottom: 2.2rem; }
-    .api-info-header h1 { color: #2563eb; margin-bottom: 0.2em; font-size: 2.1em; }
-    /* Group Card */
-    .group { margin-bottom: 2.2rem; border-radius: 10px; box-shadow: 0 2px 8px #0001; background: #f8fafc; transition: box-shadow 0.2s; }
-    .group-header { cursor: pointer; font-size: 1.15em; font-weight: bold; background: #e0e7ef; padding: 0.7em 1.2em; border-radius: 10px 10px 0 0; margin-bottom: 0.2em; display: flex; align-items: center; gap: 0.7em; transition: background 0.2s; }
-    .group-header:hover { background: #dbeafe; }
-    .group-content { padding: 0.5em 1.2em 1.2em 1.2em; animation: fadeIn 0.3s; }
-    /* Endpoint Card */
-    .socket { margin-bottom: 2.5rem; border-radius: 8px; box-shadow: 0 1px 6px #0001; background: #fff; transition: box-shadow 0.2s; border: 1px solid #e5e7eb; }
-    .socket-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; cursor: pointer; padding: 0.7em 1.2em; border-radius: 8px 8px 0 0; background: #f1f5f9; transition: background 0.2s; }
-    .socket-header:hover { background: #e0e7ef; }
-    .socket-title { font-size: 1.3rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 0.5em; }
-    .socket-url { font-size: 0.95rem; color: #64748b; }
-    .socket-tags { margin: 0.5rem 0; color: #64748b; font-size: 0.95em; }
-    .socket-params { margin: 0.5rem 0; font-size: 0.97em; }
-    /* Message Section */
-    .msg-section { margin-top: 1.2rem; }
-    .msg-header { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; background: #f1f5f9; border-radius: 4px; padding: 0.4rem 0.8rem; margin-bottom: 0.2rem; font-size: 1.08em; transition: background 0.2s; }
-    .msg-header:hover { background: #e0e7ef; }
-    .msg-list { margin: 0.5rem 0 0.5rem 0.5rem; transition: max-height 0.3s; }
-    .msg { background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px; padding: 0.7rem 1rem; margin: 0.5rem 0; box-shadow: 0 1px 3px #0001; display: flex; flex-direction: column; gap: 0.2em; }
-    .msg .dir { font-weight: bold; padding: 0.1em 0.5em; border-radius: 4px; color: #fff; background: #2563eb; font-size: 0.98em; margin-right: 0.5em; }
-    .msg .dir.receive { background: #16a34a; }
-    .msg .deprecated { color: #f87171; font-weight: bold; margin-left: 0.7em; }
-    .msg .msg-icon { font-size: 1.1em; margin-right: 0.3em; }
-    pre { background: #e0e7ef; padding: 0.5rem; border-radius: 4px; overflow-x: auto; }
-    /* Playground Tabs */
-    .tab-btn { background: #e0e7ef; color: #2563eb; border: none; padding: 0.3em 1em; border-radius: 4px 4px 0 0; font-size: 1em; cursor: pointer; margin-right: 0.2em; transition: background 0.2s, color 0.2s; }
-    .tab-btn.active, .tab-btn:focus { background: #2563eb; color: #fff; }
-    /* Playground */
-    .playground { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 1rem; margin-top: 1.5rem; box-shadow: 0 1px 4px #0001; }
-    .playground label { font-weight: bold; }
-    .playground input, .playground select, .playground textarea { font-family: monospace; margin: 0.2rem 0; padding: 0.2rem; border-radius: 3px; border: 1px solid #cbd5e1; }
-    .playground button { background: #94a3b8; color: #fff; border: none; border-radius: 3px; padding: 0.3rem 1rem; margin-top: 0.5rem; cursor: pointer; }
-    .playground button.active { background: #2563eb; }
-    .playground button:disabled { background: #94a3b8; }
-    .playground .log { background: #e0e7ef; border-radius: 4px; padding: 0.5rem; margin-top: 0.5rem; max-height: 120px; overflow-y: auto; font-size: 0.95em; }
-    .playground .log-entry { margin-bottom: 0.2em; }
-    .playground .log-entry .timestamp { color: #64748b; font-size: 0.92em; margin-right: 0.5em; }
-    .collapser { font-size: 1.1em; color: #2563eb; margin-right: 0.5em; user-select: none; transition: transform 0.2s; }
-    .collapser.open { transform: rotate(90deg); }
-    .error { color: #f87171; font-weight: bold; }
-    .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 0.5em; vertical-align: middle; }
-    .status-disconnected { background: #f87171; }
-    .status-connecting { background: #fbbf24; }
-    .status-connected { background: #16a34a; }
-    /* Responsive */
-    @media (max-width: 700px) {
-      .container { padding: 0.5rem; }
-      .api-info-header { padding: 0.7em 0.5em; }
-      .group-content, .socket-header, .socket-content, .playground { padding: 0.7em 0.5em; }
-      .socket-title { font-size: 1.05rem; }
-    }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .example-block {
-      font-size: 0.95em;
-      max-height: 180px;
-      overflow: auto;
-      background: #f8f8f8;
-      border-radius: 4px;
-      padding: 0.5em;
-      margin-top: 0.3em;
-    }
-    .example-toggle {
-      margin-left: 0.5em;
-      font-size: 0.95em;
-      background: #e0e7ef;
-      border: none;
-      border-radius: 3px;
-      padding: 0.2em 0.7em;
-      cursor: pointer;
-      color: #2563eb;
-    }
-    .example-toggle:hover {
-      background: #dbeafe;
-    }
-    .messages-section {
-      margin-top: 0.7em;
-    }
-    .messages-toggle {
-      margin-bottom: 0.5em;
-      font-size: 1em;
-      background: #e0e7ef;
-      border: none;
-      border-radius: 3px;
-      padding: 0.3em 1em;
-      cursor: pointer;
-      color: #2563eb;
-    }
-    .messages-toggle:hover {
-      background: #dbeafe;
-    }
-    .msg-accordion {
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      margin-bottom: 1em;
-      background: #f9fafb;
-      box-shadow: 0 1px 4px #0001;
-    }
-    .msg-header {
-      cursor: pointer;
-      padding: 0.7em 1em;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 1em;
-      background: #f1f5f9;
-      border-radius: 6px 6px 0 0;
-      transition: background 0.2s;
-    }
-    .msg-header.open, .msg-header:hover {
-      background: #e0e7ef;
-    }
-    .msg-type {
-      font-size: 0.98em;
-      font-weight: bold;
-      color: #2563eb;
-    }
-    .msg-title {
-      font-size: 1.08em;
-      color: #1e293b;
-    }
-    .msg-desc {
-      color: #64748b;
-      font-size: 0.97em;
-      margin-left: 0.7em;
-    }
-    .msg-details {
-      padding: 0.7em 1em 1em 1em;
-      background: #fff;
-      border-radius: 0 0 6px 6px;
-      border-top: 1px solid #e5e7eb;
-    }
-    .wsmsg-card {
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      margin-bottom: 1.2em;
-      background: #fff;
-      box-shadow: 0 1px 6px #0001;
-      padding: 1.1em 1.2em 1.2em 1.2em;
-    }
-    .wsmsg-header {
-      display: flex;
-      align-items: center;
-      gap: 1em;
-      margin-bottom: 0.3em;
-    }
-    .wsmsg-badge {
-      color: #fff;
-      font-weight: bold;
-      border-radius: 4px;
-      padding: 0.2em 0.8em;
-      font-size: 1em;
-      letter-spacing: 0.03em;
-      display: inline-block;
-    }
-    .wsmsg-type {
-      font-size: 1.13em;
-      font-weight: 600;
-      color: #1e293b;
-    }
-    .wsmsg-desc {
-      color: #64748b;
-      font-size: 1em;
-      margin-bottom: 0.5em;
-    }
-    .wsmsg-section {
-      margin-bottom: 0.5em;
-    }
-    .wsmsg-payload {
-      background: #f8fafc;
-      border-radius: 4px;
-      padding: 0.5em;
-      font-size: 0.98em;
-      margin: 0.2em 0 0 0;
-      overflow-x: auto;
-    }
-    .wsmsg-errors {
-      margin-top: 0.5em;
-    }
-    .wsmsg-err-badge {
-      background: #f87171;
-      color: #fff;
-      border-radius: 3px;
-      padding: 0.1em 0.7em;
-      font-size: 0.95em;
-      margin-right: 0.7em;
-    }
-    .wsmsg-err {
-      color: #f87171;
-      margin-right: 0.7em;
-      font-size: 0.98em;
-    }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socketeer - WebSocket API Documentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <style>
+        :root {
+            --color-bg: #f8fafc;
+            --color-fg: #1e293b;
+            --color-card: #ffffff;
+            --color-border: #e2e8f0;
+            --color-primary: #3b82f6;
+            --color-primary-hover: #2563eb;
+            --color-secondary: #64748b;
+            --color-accent: #10b981;
+            --color-error: #ef4444;
+            --color-warning: #f59e0b;
+            --color-muted: #f1f5f9;
+            --color-muted-fg: #64748b;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius: 0.5rem;
+        }
+
+        [data-theme="dark"] {
+            --color-bg: #0f172a;
+            --color-fg: #f1f5f9;
+            --color-card: #1e293b;
+            --color-border: #334155;
+            --color-primary: #60a5fa;
+            --color-primary-hover: #3b82f6;
+            --color-secondary: #94a3b8;
+            --color-accent: #34d399;
+            --color-error: #f87171;
+            --color-warning: #fbbf24;
+            --color-muted: #334155;
+            --color-muted-fg: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-muted) 100%);
+            color: var(--color-fg);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+            color: white;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-info {
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, #ffffff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            flex-wrap: wrap;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--color-card);
+            color: var(--color-fg);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-muted);
+        }
+
+        .btn-success {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-error {
+            background: var(--color-error);
+            color: white;
+        }
+
+        .btn-error:hover {
+            background: #dc2626;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--color-secondary);
+        }
+
+        .btn-ghost:hover {
+            background: var(--color-muted);
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: all 0.2s;
+            margin-bottom: 1.5rem;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            color: var(--color-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Group Styles */
+        .group {
+            margin-bottom: 2rem;
+        }
+
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            background: var(--color-muted);
+            border-radius: var(--radius) var(--radius) 0 0;
+            transition: background 0.2s;
+        }
+
+        .group-header:hover {
+            background: var(--color-border);
+        }
+
+        .group-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .group-content {
+            display: none;
+            padding: 1rem;
+            background: var(--color-card);
+            border-radius: 0 0 var(--radius) var(--radius);
+            border: 1px solid var(--color-border);
+            border-top: none;
+        }
+
+        .group-content.open {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        /* Socket Styles */
+        .socket {
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .socket-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            background: var(--color-muted);
+            transition: background 0.2s;
+        }
+
+        .socket-header:hover {
+            background: var(--color-border);
+        }
+
+        .socket-icon {
+            font-size: 1.5rem;
+        }
+
+        .socket-info {
+            flex: 1;
+        }
+
+        .socket-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .socket-url {
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: var(--color-secondary);
+        }
+
+        .socket-tags {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .socket-content {
+            display: none;
+            padding: 1.5rem;
+            background: var(--color-card);
+        }
+
+        .socket-content.open {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 9999px;
+            background: var(--color-muted);
+            color: var(--color-fg);
+        }
+
+        .badge-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .badge-success {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .badge-error {
+            background: var(--color-error);
+            color: white;
+        }
+
+        .badge-outline {
+            background: transparent;
+            border: 1px solid var(--color-border);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--color-fg);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            background: var(--color-card);
+            color: var(--color-fg);
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            background: var(--color-card);
+            color: var(--color-fg);
+            font-size: 0.875rem;
+        }
+
+        /* Tab Styles */
+        .tabs {
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-list {
+            display: flex;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: var(--color-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-button.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Code Styles */
+        .code-block {
+            background: var(--color-muted);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Client Styles */
+        .client-panel {
+            border: 1px solid var(--color-border);
+            border-left: 4px solid var(--color-primary);
+            border-radius: var(--radius);
+            margin-bottom: 1.5rem;
+            background: var(--color-card);
+        }
+
+        .client-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .client-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .client-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .client-content {
+            padding: 1.5rem;
+        }
+
+        .status-indicator {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-connected {
+            background: var(--color-accent);
+            animation: pulse 2s infinite;
+        }
+
+        .status-disconnected {
+            background: var(--color-error);
+        }
+
+        .status-connecting {
+            background: var(--color-warning);
+            animation: pulse 1s infinite;
+        }
+
+        /* Log Styles */
+        .log-container {
+            background: var(--color-muted);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            height: 200px;
+            overflow-y: auto;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+            word-break: break-all;
+        }
+
+        .log-timestamp {
+            color: var(--color-muted-fg);
+            margin-right: 0.5rem;
+        }
+
+        .log-in {
+            color: var(--color-primary);
+            font-weight: 500;
+        }
+
+        .log-out {
+            color: var(--color-accent);
+            font-weight: 500;
+        }
+
+        .log-error {
+            color: var(--color-error);
+            font-weight: 500;
+        }
+
+        .log-info {
+            color: var(--color-secondary);
+        }
+
+        /* Message Styles */
+        .message-section {
+            background: var(--color-muted);
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .message-icon {
+            font-size: 1.25rem;
+            color: var(--color-primary);
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--color-error);
+            color: var(--color-error);
+        }
+
+        /* Grid Styles */
+        .grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        /* Utility Classes */
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+
+        .hidden { display: none; }
+        .block { display: block; }
+
+        /* Collapsible */
+        .collapser {
+            font-size: 1.1rem;
+            color: var(--color-primary);
+            margin-right: 0.5rem;
+            user-select: none;
+            transition: transform 0.2s;
+        }
+
+        .collapser.open {
+            transform: rotate(90deg);
+        }
+
+        /* Animations */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            border: none;
+            background: var(--color-card);
+            color: var(--color-fg);
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            font-size: 1.1rem;
+            color: var(--color-secondary);
+        }
+
+        .loading::before {
+            content: '';
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid var(--color-border);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem 0.5rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-title {
+                font-size: 2rem;
+            }
+
+            .grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .socket-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .client-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div id="api-info" class="api-info-header" style="margin-bottom:2.2rem;display:flex;align-items:center;gap:1.5em;">
-      <img src="logo.png" alt="Socketeer Logo" style="height:48px;width:48px;vertical-align:middle;" />
-      <div>
-        <h1 style="margin:0;color:var(--color-primary);font-size:2.1em;line-height:1.1;display:inline-block;vertical-align:middle;">Socketeer <span style="font-size:1rem;color:var(--color-secondary)">WebSocket API Docs</span></h1>
-      </div>
-      <button id="theme-switcher" class="theme-switcher" title="Toggle dark mode">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
         <span id="theme-icon">🌙</span>
-      </button>
+    </button>
+
+    <div class="container">
+        <!-- Header -->
+        <div id="api-info" class="header">
+            <div class="loading">Loading WebSocket API documentation...</div>
+        </div>
+
+        <!-- API Groups -->
+        <div id="api-groups"></div>
     </div>
-    <div id="api"></div>
-  </div>
-  <script>
-    // Tema yönetimi
-    function setTheme(theme) {
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('socketeer-theme', theme);
-      document.getElementById('theme-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
-    }
-    function toggleTheme() {
-      const current = document.documentElement.getAttribute('data-theme') || 'light';
-      setTheme(current === 'dark' ? 'light' : 'dark');
-    }
-    document.getElementById('theme-switcher').onclick = toggleTheme;
-    // İlk yüklemede tema tercihini uygula
-    (function(){
-      const saved = localStorage.getItem('socketeer-theme');
-      if(saved) setTheme(saved);
-    })();
-    fetch('/wsapi.yaml')
-      .then(r => r.text())
-      .then(txt => jsyaml.load(txt))
-      .then(spec => {
-        // Render API info header
-        const info = spec.info || {};
-        const apiInfoEl = document.getElementById('api-info');
-        apiInfoEl.innerHTML = `
-          <div style="display:flex;align-items:center;gap:1.2em;flex-wrap:wrap;">
-            <div style="flex:1 1 300px;">
-              <h1 style="margin:0;color:var(--color-primary);font-size:2.1em;line-height:1.1;">${info.title || 'WebSocket API Docs'}</h1>
-              <div style="color:var(--color-secondary);font-size:1.1em;margin:0.2em 0 0.7em 0;">${info.description || ''}</div>
-              <div style="color:var(--color-secondary);font-size:0.98em;">
-                <b>Version:</b> <span>${info.version || ''}</span>
-                ${info.contact && (info.contact.name || info.contact.email) ? `<span style='margin-left:1.2em;'><b>Contact:</b> ${info.contact.name || ''}${info.contact.email ? ' &lt;' + info.contact.email + '&gt;' : ''}</span>` : ''}
-                ${info.license && (info.license.name || info.license.url) ? `<span style='margin-left:1.2em;'><b>License:</b> ${info.license.url ? `<a href='${info.license.url}' target='_blank' style='color:var(--color-primary);text-decoration:underline;'>${info.license.name || info.license.url}</a>` : info.license.name}</span>` : ''}
-              </div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:0.5em;align-items:flex-end;">
-              <button id="copy-yaml" style="background:var(--color-primary);color:#fff;border:none;padding:0.4em 1.2em;border-radius:5px;cursor:pointer;font-size:1em;">Copy YAML</button>
-              <button id="download-yaml" style="background:var(--color-secondary);color:#fff;border:none;padding:0.4em 1.2em;border-radius:5px;cursor:pointer;font-size:1em;">Download YAML</button>
-            </div>
-          </div>
-        `;
-        // Copy/download YAML logic
-        document.getElementById('copy-yaml').onclick = () => {
-          fetch('/wsapi.yaml').then(r => r.text()).then(txt => {
-            navigator.clipboard.writeText(txt);
-            document.getElementById('copy-yaml').textContent = 'Copied!';
-            setTimeout(()=>document.getElementById('copy-yaml').textContent='Copy YAML', 1200);
-          });
-        };
-        document.getElementById('download-yaml').onclick = () => {
-          fetch('/wsapi.yaml').then(r => r.text()).then(txt => {
-            const blob = new Blob([txt], {type:'text/yaml'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'wsapi.yaml';
-            a.click();
-          });
-        };
-        const el = document.getElementById('api');
-        if (!spec.sockets || !spec.sockets.length) {
-          el.innerHTML = '<em>No WebSocket endpoints found.</em>';
-          return;
-        }
-        // Group sockets by group (not tag)
-        const groupMap = {};
-        spec.sockets.forEach((socket, idx) => {
-          const group = socket.group && socket.group.trim() ? socket.group : 'Ungrouped';
-          if (!groupMap[group]) groupMap[group] = [];
-          groupMap[group].push({socket, idx});
-        });
-        // Render groups
-        el.innerHTML = Object.keys(groupMap).sort().map((group, gIdx) => `
-          <div class="group" id="group-${gIdx}">
-            <div class="group-header" onclick="toggleGroup(${gIdx})">
-              <span class="collapser" id="group-collapser-${gIdx}">►</span> <span style="font-size:1.2em;">${group}</span>
-            </div>
-            <div class="group-content" id="group-content-${gIdx}" style="display:none;">
-              ${groupMap[group].map(({socket, idx}, sIdx) => `
-                <div class="socket" id="socket-${gIdx}-${sIdx}">
-                  <div class="socket-header" onclick="toggleSocket(${gIdx},${sIdx})">
-                    <span class="collapser" id="socket-collapser-${gIdx}-${sIdx}">►</span>
-                    <span class="socket-title">
-                      <span class="msg-icon">${socket.name.toLowerCase().includes('chat') ? '💬' : socket.name.toLowerCase().includes('notify') ? '🔔' : socket.name.toLowerCase().includes('ping') ? '🏓' : '🔗'}</span>
-                      ${socket.name}
-                    </span>
-                    <span class="socket-url">${socket.url}</span>
-                  </div>
-                  <div class="socket-content" id="socket-content-${gIdx}-${sIdx}" style="display:none;">
-                    <div style="margin-bottom:0.5em;">${socket.description || ''}</div>
-                    <div class="socket-tags"><b>Tags:</b> ${(socket.tags||[]).join(', ')}</div>
-                    <div class="socket-params"><b>Connection Params:</b> ${(socket.connectionParams||[]).map(p => `${p.name} <i>(${p.in}, ${p.type}${p.required ? ', required' : ''})</i>`).join(', ')}</div>
-                    <div class="messages-section">
-                      <button class="messages-toggle" onclick="toggleMessages(this)">Show Messages</button>
-                      <div class="messages-section" style="display:none">
-                        <div class="msg-section">
-                          <div class="msg-header" onclick="toggleMsgList(${idx})">
-                            <span class="collapser" id="collapser-${idx}">▼</span>
-                            <b>Messages</b>
-                          </div>
-                          <div class="msg-list" id="msg-list-${idx}">
-                            ${(() => {
-                              // Robustly detect groupedMessages regardless of YAML casing
-                              let grouped = socket.groupedMessages || socket.groupedmessages;
-                              if (grouped && grouped.length && (grouped[0].send || grouped[0].receive)) {
-                                // New grouped message structure
-                                return grouped.map((groupedMsg, mIdx) => {
-                                  const hasSend = groupedMsg.send;
-                                  const hasReceive = groupedMsg.receive;
-                                  const sendMsg = groupedMsg.send;
-                                  const receiveMsg = groupedMsg.receive;
-                                  let sendBadgeColor = '#2563eb';
-                                  let receiveBadgeColor = '#16a34a';
-                                  if (sendMsg && ((sendMsg.type||'').toLowerCase().includes('error') || (sendMsg.description||'').toLowerCase().includes('error'))) sendBadgeColor = '#f87171';
-                                  if (receiveMsg && ((receiveMsg.type||'').toLowerCase().includes('error') || (receiveMsg.description||'').toLowerCase().includes('error'))) receiveBadgeColor = '#f87171';
-                                  return `
-                                    <div class="wsmsg-card">
-                                      <div class="wsmsg-header">
-                                        ${hasSend ? `<span class="wsmsg-badge" style="background:${sendBadgeColor}">[send]</span>` : ''}
-                                        ${hasReceive ? `<span class="wsmsg-badge" style="background:${receiveBadgeColor}">[receive]</span>` : ''}
-                                        <span class="wsmsg-type">${groupedMsg.type}</span>
-                                      </div>
-                                      <div class="wsmsg-desc">${groupedMsg.description||''}</div>
-                                      <button class="example-toggle" onclick="toggleExample(this)">Show Payload & Example</button>
-                                      <div class="example-block" style="display:none">
-                                        ${hasSend ? `
-                                          <div class="wsmsg-section">
-                                            <b>Send Payload:</b>
-                                            <pre class="wsmsg-payload">${JSON.stringify(sendMsg.payload, null, 2)}</pre>
-                                            ${sendMsg.example ? `
-                                              <b>Send Example:</b>
-                                              <pre class="wsmsg-payload">${typeof sendMsg.example === 'string' ? sendMsg.example : JSON.stringify(sendMsg.example, null, 2)}</pre>
-                                            ` : ''}
-                                            ${(sendMsg.errors||[]).length ? `<div class='wsmsg-errors'><span class='wsmsg-err-badge'>Send Errors</span> ${(sendMsg.errors||[]).map(e => `<span class='wsmsg-err'>${e.code}: ${e.description}</span>`).join('')}</div>` : ''}
-                                          </div>
-                                        ` : ''}
-                                        ${hasReceive ? `
-                                          <div class="wsmsg-section">
-                                            <b>Receive Payload:</b>
-                                            <pre class="wsmsg-payload">${JSON.stringify(receiveMsg.payload, null, 2)}</pre>
-                                            ${receiveMsg.example ? `
-                                              <b>Receive Example:</b>
-                                              <pre class="wsmsg-payload">${typeof receiveMsg.example === 'string' ? receiveMsg.example : JSON.stringify(receiveMsg.example, null, 2)}</pre>
-                                            ` : ''}
-                                            ${(receiveMsg.errors||[]).length ? `<div class='wsmsg-errors'><span class='wsmsg-err-badge'>Receive Errors</span> ${(receiveMsg.errors||[]).map(e => `<span class='wsmsg-err'>${e.code}: ${e.description}</span>`).join('')}</div>` : ''}
-                                          </div>
-                                        ` : ''}
-                                      </div>
-                                    </div>
-                                  `;
-                                }).join('');
-                              } else {
-                                // Fallback to old message structure for backward compatibility
-                                const messages = socket.messages || [];
-                                return messages.map((msg, mIdx) => {
-                                  let badgeColor = msg.direction === 'send' ? '#2563eb' : (msg.direction === 'receive' ? '#16a34a' : '#64748b');
-                                  if ((msg.type||'').toLowerCase().includes('error') || (msg.description||'').toLowerCase().includes('error')) badgeColor = '#f87171';
-                                  return `
-                                    <div class="wsmsg-card">
-                                      <div class="wsmsg-header">
-                                        <span class="wsmsg-badge" style="background:${badgeColor}">[${msg.direction}]</span>
-                                        <span class="wsmsg-type">${msg.type}</span>
-                                      </div>
-                                      <div class="wsmsg-desc">${msg.description||''}</div>
-                                      <div class="wsmsg-section"><b>Payload:</b>
-                                        <pre class="wsmsg-payload">${JSON.stringify(msg.payload, null, 2)}</pre>
-                                      </div>
-                                      <button class="example-toggle" onclick="toggleExample(this)">Show Example</button>
-                                      <pre class="example-block" style="display:none">${msg.example ? (typeof msg.example === 'string' ? msg.example : JSON.stringify(msg.example, null, 2)) : ''}</pre>
-                                      ${(msg.errors||[]).length ? `<div class='wsmsg-errors'><span class='wsmsg-err-badge'>Errors</span> ${(msg.errors||[]).map(e => `<span class='wsmsg-err'>${e.code}: ${e.description}</span>`).join('')}</div>` : ''}
-                                    </div>
-                                  `;
-                                }).join('');
-                              }
-                            })()}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="playground" id="playground-${idx}">
-                      <label style="font-size:1.1em;">Playground</label><br>
-                      <div style="margin-bottom:0.5rem;">
-                        <span style="font-size:0.95em;">Connect and test this WebSocket endpoint.</span>
-                      </div>
-                      <div style="margin-bottom:0.7rem;">
-                        <button type="button" id="tab-example-${idx}" class="tab-btn active">Example</button>
-                        <button type="button" id="tab-test-${idx}" class="tab-btn">Test</button>
-                      </div>
-                      <div id="example-pane-${idx}" style="display:block;">
-                        <div style="background:var(--color-card);color:var(--color-fg);padding:1em;border-radius:6px;font-size:1.1em;overflow-x:auto;">
-                          <pre id="example-json-${idx}" style="margin:0;background:transparent;color:inherit;font-size:1.1em;"></pre>
-                        </div>
-                      </div>
-                      <div id="test-pane-${idx}" style="display:none;">
-                        <button type="button" id="add-client-${idx}" style="background:var(--color-accent);color:#fff;margin-bottom:0.7em;">+ Yeni Client Ekle</button>
-                        <div id="clients-container-${idx}"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `).join('');
 
-        // Collapse/expand logic for groups and sockets
-        window.toggleGroup = function(gIdx) {
-          const content = document.getElementById('group-content-' + gIdx);
-          const collapser = document.getElementById('group-collapser-' + gIdx);
-          if (content.style.display === 'none') {
-            content.style.display = '';
-            collapser.textContent = '▼';
-            collapser.classList.add('open');
-          } else {
-            content.style.display = 'none';
-            collapser.textContent = '►';
-            collapser.classList.remove('open');
-          }
-        };
-        window.toggleSocket = function(gIdx, sIdx) {
-          const content = document.getElementById('socket-content-' + gIdx + '-' + sIdx);
-          const collapser = document.getElementById('socket-collapser-' + gIdx + '-' + sIdx);
-          if (content.style.display === 'none') {
-            content.style.display = '';
-            collapser.textContent = '▼';
-            collapser.classList.add('open');
-          } else {
-            content.style.display = 'none';
-            collapser.textContent = '►';
-            collapser.classList.remove('open');
-          }
-        };
+    <script>
+        // Global state
+        let clients = {};
+        let expandedGroups = new Set();
+        let expandedSockets = new Set();
 
-        // Collapsible message lists
-        window.toggleMsgList = function(idx) {
-          const el = document.getElementById('msg-list-' + idx);
-          const collapser = document.getElementById('collapser-' + idx);
-          if (el.style.display === 'none') {
-            el.style.display = '';
-            collapser.textContent = '▼';
-            collapser.classList.add('open');
-          } else {
-            el.style.display = 'none';
-            collapser.textContent = '►';
-            collapser.classList.remove('open');
-          }
-        };
-
-        // Helper to build ws://host:port/path from path or full URL
-        function getWsUrl(pathOrUrl) {
-          // If already absolute ws:// or wss://, use as is
-          if (/^wss?:\/\//.test(pathOrUrl)) return pathOrUrl;
-          const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-          return `${proto}://${window.location.host}${pathOrUrl.startsWith('/') ? pathOrUrl : '/' + pathOrUrl}`;
+        // Theme management
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('socketeer-theme', newTheme);
+            document.getElementById('theme-icon').textContent = newTheme === 'dark' ? '☀️' : '🌙';
         }
 
-        // Playground logic for each socket
-        spec.sockets.forEach((socket, idx) => {
-          // Multi-client state
-          const clients = [];
-          let clientCount = 0;
-          const clientsContainer = document.getElementById(`clients-container-${idx}`);
-          document.getElementById(`add-client-${idx}`).onclick = () => {
-            addClientPanel();
-          };
-          function addClientPanel() {
-            const clientId = clientCount++;
-            const panel = document.createElement('div');
-            panel.className = 'client-panel';
-            panel.style = 'border:1px solid var(--color-border);border-radius:6px;padding:1em;margin-bottom:1em;background:var(--color-card);box-shadow:0 1px 4px #0001;';
-            panel.innerHTML = `
-              <div style="display:flex;align-items:center;gap:1em;margin-bottom:0.5em;">
-                <b>Client #${clientId+1}</b>
-                <span id="status-${idx}-${clientId}"><span class="status-dot status-disconnected"></span>Disconnected</span>
-                <button id="remove-client-${idx}-${clientId}" style="margin-left:auto;background:var(--color-error);">Kaldır</button>
-              </div>
-              <div style="display:flex;gap:0.5em;margin-bottom:0.5em;">
-                <button id="rec-toggle-${idx}-${clientId}" style="background:var(--color-primary);color:#fff;">Kaydı Başlat</button>
-                <button id="rec-download-${idx}-${clientId}" style="background:var(--color-secondary);color:#fff;">İndir</button>
-              </div>
-              <form id="connform-${idx}-${clientId}" style="margin-bottom:0.5rem;display:flex;flex-wrap:wrap;gap:0.7em;align-items:center;">
-                ${(socket.connectionParams||[]).map(p => `
-                  <label>${p.name} (${p.in}):</label>
-                  <input type="text" id="param-${idx}-${clientId}-${p.name}" placeholder="${p.description||''}" ${p.required?'required':''} style="margin-right:0.5em;" />
-                `).join('')}
-              </form>
-              <div style="margin-bottom:0.5em;">
-                <label>Message Type: </label>
-                <select id="msgtype-${idx}-${clientId}">
-                  ${(socket.messages||[]).filter(m=>m.direction==="send").map(m=>`<option value="${m.type}">${m.type}</option>`).join('')}
-                </select>
-              </div>
-              <div style="margin-bottom:0.5em;">
-                <label>Payload:</label><br>
-                <textarea id="payload-${idx}-${clientId}" rows="4" cols="50">{}</textarea>
-                <button type="button" id="copy-payload-${idx}-${clientId}" style="margin-left:0.5em;">Copy</button>
-                <button type="button" id="clear-payload-${idx}-${clientId}" style="margin-left:0.2em;">Clear</button>
-              </div>
-              <button id="connect-${idx}-${clientId}">Connect</button>
-              <button id="send-${idx}-${clientId}" disabled>Send</button>
-              <button id="close-${idx}-${clientId}" disabled>Close</button>
-              <button type="button" id="clear-log-${idx}-${clientId}" style="float:right;">Clear Log</button>
-              <div class="log" id="log-${idx}-${clientId}"></div>
-            `;
-            clientsContainer.appendChild(panel);
-            scrollToNewClient();
-            // Client state
-            let ws = null;
-            let connected = false;
-            const log = panel.querySelector(`#log-${idx}-${clientId}`);
-            const connectBtn = panel.querySelector(`#connect-${idx}-${clientId}`);
-            const sendBtn = panel.querySelector(`#send-${idx}-${clientId}`);
-            const closeBtn = panel.querySelector(`#close-${idx}-${clientId}`);
-            const payloadInput = panel.querySelector(`#payload-${idx}-${clientId}`);
-            const msgTypeSelect = panel.querySelector(`#msgtype-${idx}-${clientId}`);
-            const statusEl = panel.querySelector(`#status-${idx}-${clientId}`);
-            // Trafik kaydı
-            let recording = false;
-            let trafficLog = [];
-            const recBtn = panel.querySelector(`#rec-toggle-${idx}-${clientId}`);
-            const downloadBtn = panel.querySelector(`#rec-download-${idx}-${clientId}`);
-            recBtn.onclick = () => {
-              recording = !recording;
-              recBtn.textContent = recording ? 'Kaydı Durdur' : 'Kaydı Başlat';
-              if (!recording) {
-                recBtn.style.background = 'var(--color-primary)';
-              } else {
-                recBtn.style.background = 'var(--color-accent)';
-              }
-            };
-            downloadBtn.onclick = () => {
-              if (!trafficLog.length) return;
-              const blob = new Blob([JSON.stringify(trafficLog, null, 2)], {type:'application/json'});
-              const a = document.createElement('a');
-              a.href = URL.createObjectURL(blob);
-              a.download = `ws-traffic-client${clientId+1}.json`;
-              a.click();
-            };
-            // Connect
-            connectBtn.onclick = (e) => {
-              e.preventDefault();
-              if (connected) return;
-              let url = socket.url;
-              (socket.connectionParams||[]).forEach(p => {
-                const val = panel.querySelector(`#param-${idx}-${clientId}-${p.name}`).value;
-                if (p.in === 'query') {
-                  url += (url.includes('?') ? '&' : '?') + `${p.name}=${encodeURIComponent(val)}`;
-                }
-              });
-              ws = new WebSocket(getWsUrl(url));
-              statusEl.innerHTML = '<span class="status-dot status-connecting"></span>Connecting...';
-              ws.onopen = () => {
-                connected = true;
-                statusEl.innerHTML = '<span class="status-dot status-connected"></span>Connected';
-                connectBtn.disabled = true;
-                sendBtn.disabled = false;
-                closeBtn.disabled = false;
-                logMsg('Connected', 'info');
-              };
-              ws.onmessage = (ev) => {
-                logMsg(ev.data, 'in');
-              };
-              ws.onclose = () => {
-                connected = false;
-                statusEl.innerHTML = '<span class="status-dot status-disconnected"></span>Disconnected';
-                connectBtn.disabled = false;
-                sendBtn.disabled = true;
-                closeBtn.disabled = true;
-                logMsg('Disconnected', 'info');
-              };
-              ws.onerror = (err) => {
-                logMsg('Error: ' + err.message, 'error');
-              };
-            };
-            // Send
-            sendBtn.onclick = (e) => {
-              e.preventDefault();
-              if (!connected) return;
-              const msgType = msgTypeSelect.value;
-              let payload = payloadInput.value;
-              try { payload = JSON.stringify(JSON.parse(payload)); } catch {}
-              ws.send(payload);
-              logMsg(payload, 'out');
-            };
-            // Close
-            closeBtn.onclick = (e) => {
-              e.preventDefault();
-              if (ws) ws.close();
-            };
-            // Copy/Clear payload
-            panel.querySelector(`#copy-payload-${idx}-${clientId}`).onclick = () => {
-              navigator.clipboard.writeText(payloadInput.value);
-            };
-            panel.querySelector(`#clear-payload-${idx}-${clientId}`).onclick = () => {
-              payloadInput.value = '{}';
-            };
-            // Clear log
-            panel.querySelector(`#clear-log-${idx}-${clientId}`).onclick = () => {
-              log.innerHTML = '';
-            };
-            // Remove client
-            panel.querySelector(`#remove-client-${idx}-${clientId}`).onclick = () => {
-              if (ws) ws.close();
-              panel.remove();
-            };
-            // Log helper
-            function logMsg(msg, dir) {
-              const entry = document.createElement('div');
-              entry.className = 'log-entry';
-              const ts = new Date().toLocaleTimeString();
-              entry.innerHTML = `<span class='timestamp'>[${ts}]</span> <span style='color:${dir==='in'?'var(--color-accent)':dir==='out'?'var(--color-primary)':dir==='error'?'var(--color-error)':'var(--color-secondary)'};'>${msg}</span>`;
-              log.appendChild(entry);
-              log.scrollTop = log.scrollHeight;
-              if (recording && (dir === 'in' || dir === 'out')) {
-                trafficLog.push({timestamp: new Date().toISOString(), direction: dir, payload: msg});
-              }
+        // Initialize theme
+        function initTheme() {
+            const savedTheme = localStorage.getItem('socketeer-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('theme-icon').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // Utility functions
+        function getSocketIcon(name) {
+            const lowerName = name.toLowerCase();
+            if (lowerName.includes('chat')) return '💬';
+            if (lowerName.includes('notify')) return '🔔';
+            if (lowerName.includes('update')) return '🔄';
+            if (lowerName.includes('ping')) return '🏓';
+            return '🔗';
+        }
+
+        function formatTimestamp() {
+            return new Date().toLocaleTimeString();
+        }
+
+        function validateJson(jsonString) {
+            try {
+                JSON.parse(jsonString);
+                return true;
+            } catch {
+                return false;
             }
-          }
-          // Varsayılan bir client paneli ekle
-          addClientPanel();
-          // Tab switching logic
-          const tabExample = document.getElementById(`tab-example-${idx}`);
-          const tabTest = document.getElementById(`tab-test-${idx}`);
-          const examplePane = document.getElementById(`example-pane-${idx}`);
-          const testPane = document.getElementById(`test-pane-${idx}`);
-          tabExample.onclick = () => {
-            tabExample.classList.add('active');
-            tabTest.classList.remove('active');
-            examplePane.style.display = 'block';
-            testPane.style.display = 'none';
-          };
-          tabTest.onclick = () => {
-            tabTest.classList.add('active');
-            tabExample.classList.remove('active');
-            examplePane.style.display = 'none';
-            testPane.style.display = 'block';
-          };
-        });
-      });
-    function toggleExample(btn) {
-      const pre = btn.nextElementSibling;
-      if (pre.style.display === 'none') {
-        pre.style.display = 'block';
-        btn.textContent = 'Hide Example';
-      } else {
-        pre.style.display = 'none';
-        btn.textContent = 'Show Example';
-      }
-    }
-    function toggleMessages(btn) {
-      const section = btn.nextElementSibling;
-      if (section.style.display === 'none') {
-        section.style.display = 'block';
-        btn.textContent = 'Hide Messages';
-      } else {
-        section.style.display = 'none';
-        btn.textContent = 'Show Messages';
-      }
-    }
-    function toggleMsgDetails(header) {
-      const details = header.nextElementSibling;
-      if (details.style.display === 'none') {
-        details.style.display = 'block';
-        header.classList.add('open');
-      } else {
-        details.style.display = 'none';
-        header.classList.remove('open');
-      }
-    }
-    function scrollToNewClient() {
-      setTimeout(() => {
-        const clients = document.querySelectorAll('.client-panel');
-        if (clients.length) {
-          clients[clients.length-1].scrollIntoView({behavior: 'smooth', block: 'center'});
         }
-      }, 100);
-    }
-  </script>
+
+        function getWsUrl(pathOrUrl) {
+            // If already absolute ws:// or wss://, use as is
+            if (/^wss?:\/\//.test(pathOrUrl)) return pathOrUrl;
+            const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            return `${proto}://${window.location.host}${pathOrUrl.startsWith('/') ? pathOrUrl : '/' + pathOrUrl}`;
+        }
+
+        // Group management
+        function toggleGroup(groupName) {
+            const content = document.getElementById(`group-content-${groupName}`);
+            const icon = document.getElementById(`group-icon-${groupName}`);
+            
+            if (expandedGroups.has(groupName)) {
+                expandedGroups.delete(groupName);
+                content.classList.remove('open');
+                icon.classList.remove('open');
+            } else {
+                expandedGroups.add(groupName);
+                content.classList.add('open');
+                icon.classList.add('open');
+            }
+        }
+
+        // Socket management
+        function toggleSocket(socketId) {
+            const content = document.getElementById(`socket-content-${socketId}`);
+            const icon = document.getElementById(`socket-icon-${socketId}`);
+            
+            if (expandedSockets.has(socketId)) {
+                expandedSockets.delete(socketId);
+                content.classList.remove('open');
+                icon.classList.remove('open');
+            } else {
+                expandedSockets.add(socketId);
+                content.classList.add('open');
+                icon.classList.add('open');
+            }
+        }
+
+        // Tab management
+        function switchTab(tabGroup, tabName) {
+            // Hide all tab contents in this group
+            const tabContents = document.querySelectorAll(`[data-tab-group="${tabGroup}"]`);
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all tab buttons in this group
+            const tabButtons = document.querySelectorAll(`[data-tab-button-group="${tabGroup}"]`);
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show selected tab content
+            const selectedContent = document.getElementById(`${tabGroup}-${tabName}`);
+            if (selectedContent) {
+                selectedContent.classList.add('active');
+            }
+
+            // Add active class to selected tab button
+            const selectedButton = document.querySelector(`[data-tab-button-group="${tabGroup}"][data-tab="${tabName}"]`);
+            if (selectedButton) {
+                selectedButton.classList.add('active');
+            }
+        }
+
+        // Message toggle functions
+        function toggleMessages(btn) {
+            const section = btn.nextElementSibling;
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                btn.textContent = 'Hide Messages';
+            } else {
+                section.style.display = 'none';
+                btn.textContent = 'Show Messages';
+            }
+        }
+
+        function toggleExample(btn) {
+            const pre = btn.nextElementSibling;
+            if (pre.style.display === 'none') {
+                pre.style.display = 'block';
+                btn.textContent = 'Hide Payload & Example';
+            } else {
+                pre.style.display = 'none';
+                btn.textContent = 'Show Payload & Example';
+            }
+        }
+
+        // Client management - Bu fonksiyonu tamamen değiştir
+        function addClient(socketIndex) {
+            const clientId = Date.now();
+            if (!clients[socketIndex]) {
+                clients[socketIndex] = [];
+            }
+
+            const client = {
+                id: clientId,
+                ws: null,
+                connected: false,
+                recording: false,
+                trafficLog: []
+            };
+
+            clients[socketIndex].push(client);
+            
+            // Sadece yeni client'ı ekle, mevcut olanları yeniden render etme
+            appendNewClient(socketIndex, client);
+        }
+
+        // Yeni fonksiyon ekle - renderClients fonksiyonundan önce
+        function appendNewClient(socketIndex, client) {
+            const container = document.getElementById(`clients-${socketIndex}`);
+            if (!container) return;
+
+            // İlk client ise container'ı temizle
+            if (clients[socketIndex].length === 1) {
+                container.innerHTML = '';
+            }
+
+            // Yeni client panel'ini oluştur
+            const clientPanel = document.createElement('div');
+            clientPanel.className = 'client-panel';
+            clientPanel.id = `client-panel-${socketIndex}-${client.id}`;
+            clientPanel.innerHTML = renderClientContent(socketIndex, client.id);
+            
+            container.appendChild(clientPanel);
+            
+            // Event listener'ları ekle
+            setupClientEventListeners(socketIndex, client.id);
+            
+            // Scroll to new client
+            setTimeout(() => {
+                clientPanel.scrollIntoView({behavior: 'smooth', block: 'center'});
+            }, 100);
+        }
+
+        // Yeni fonksiyon ekle - Event listener'ları ayarlamak için
+        function setupClientEventListeners(socketIndex, clientId) {
+            const socket = window.apiSpec.sockets[socketIndex];
+            const client = clients[socketIndex]?.find(c => c.id === clientId);
+            if (!client) return;
+
+            // DOM elementlerini al
+            const connectBtn = document.getElementById(`connect-${socketIndex}-${clientId}`);
+            const sendBtn = document.getElementById(`send-${socketIndex}-${clientId}`);
+            const closeBtn = document.getElementById(`disconnect-${socketIndex}-${clientId}`);
+            const payloadInput = document.getElementById(`message-${socketIndex}-${clientId}`);
+            const statusEl = document.getElementById(`status-${socketIndex}-${clientId}`);
+            const recBtn = document.getElementById(`record-${socketIndex}-${clientId}`);
+            const removeBtn = document.querySelector(`#client-panel-${socketIndex}-${clientId} .btn-error[title="Remove Client"]`);
+
+            // Connect button
+            connectBtn.onclick = (e) => {
+                e.preventDefault();
+                connectClient(socketIndex, clientId);
+            };
+
+            // Send button
+            sendBtn.onclick = (e) => {
+                e.preventDefault();
+                sendMessage(socketIndex, clientId);
+            };
+
+            // Disconnect button
+            closeBtn.onclick = (e) => {
+                e.preventDefault();
+                disconnectClient(socketIndex, clientId);
+            };
+
+            // Record button
+            recBtn.onclick = () => {
+                toggleRecording(socketIndex, clientId);
+            };
+
+            // Remove button
+            removeBtn.onclick = () => {
+                removeClient(socketIndex, clientId);
+            };
+
+            // Template load button
+            const templateBtn = document.querySelector(`#client-panel-${socketIndex}-${clientId} .btn-secondary`);
+            if (templateBtn && templateBtn.textContent.includes('Load Template')) {
+                templateBtn.onclick = () => {
+                    loadTemplate(socketIndex, clientId);
+                };
+            }
+
+            // Format, copy, clear buttons
+            const formatBtn = document.querySelector(`#client-panel-${socketIndex}-${clientId} .btn-ghost[title="Format JSON"]`);
+            const copyBtn = document.querySelector(`#client-panel-${socketIndex}-${clientId} .btn-ghost[title="Copy"]`);
+            const clearBtn = document.querySelector(`#client-panel-${socketIndex}-${clientId} .btn-ghost[title="Clear"]`);
+            const clearLogBtn = document.querySelector(`#client-panel-${socketIndex}-${clientId} .btn-ghost:last-of-type`);
+
+            if (formatBtn) formatBtn.onclick = () => formatJson(socketIndex, clientId);
+            if (copyBtn) copyBtn.onclick = () => copyMessage(socketIndex, clientId);
+            if (clearBtn) clearBtn.onclick = () => clearMessage(socketIndex, clientId);
+            if (clearLogBtn) clearLogBtn.onclick = () => clearLog(socketIndex, clientId);
+
+            // Export traffic button
+            const exportBtn = document.querySelector(`#client-panel-${socketIndex}-${clientId} .btn-ghost[title="Export Traffic"]`);
+            if (exportBtn) exportBtn.onclick = () => exportTraffic(socketIndex, clientId);
+        }
+
+        // removeClient fonksiyonunu güncelle
+        function removeClient(socketIndex, clientId) {
+            if (clients[socketIndex]) {
+                const clientIndex = clients[socketIndex].findIndex(c => c.id === clientId);
+                if (clientIndex !== -1) {
+                    const client = clients[socketIndex][clientIndex];
+                    if (client.ws) {
+                        client.ws.close();
+                    }
+                    clients[socketIndex].splice(clientIndex, 1);
+            
+                    // DOM'dan client panel'ini kaldır
+                    const clientPanel = document.getElementById(`client-panel-${socketIndex}-${clientId}`);
+                    if (clientPanel) {
+                        clientPanel.remove();
+                    }
+            
+                    // Eğer hiç client kalmadıysa placeholder göster
+                    if (clients[socketIndex].length === 0) {
+                        const container = document.getElementById(`clients-${socketIndex}`);
+                        if (container) {
+                            container.innerHTML = `
+                                <div class="alert alert-info">
+                                    No clients connected. Add a client to start testing this WebSocket endpoint.
+                                </div>
+                            `;
+                        }
+                    }
+                }
+            }
+        }
+
+        // renderClients fonksiyonunu basitleştir - sadece ilk yükleme için
+        function renderClients(socketIndex) {
+            const container = document.getElementById(`clients-${socketIndex}`);
+            if (!container) return;
+
+            const socketClients = clients[socketIndex] || [];
+            
+            if (socketClients.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        No clients connected. Add a client to start testing this WebSocket endpoint.
+                    </div>
+                `;
+                return;
+            }
+
+            // Mevcut client'ları koru, sadece eksik olanları ekle
+            socketClients.forEach(client => {
+                const existingPanel = document.getElementById(`client-panel-${socketIndex}-${client.id}`);
+                if (!existingPanel) {
+                    appendNewClient(socketIndex, client);
+                }
+            });
+        }
+
+        // renderClientContent fonksiyonunda onclick handler'ları kaldır
+        function renderClientContent(socketIndex, clientId) {
+            const socket = window.apiSpec.sockets[socketIndex];
+            
+            return `
+        <div class="client-header">
+            <div class="client-info">
+                <div id="status-${socketIndex}-${clientId}" class="flex items-center">
+                    <div class="status-indicator status-disconnected"></div>
+                    <span class="status-text">Disconnected</span>
+                </div>
+                <span class="font-medium">Client #${clientId}</span>
+            </div>
+            <div class="client-actions">
+                <button id="record-${socketIndex}-${clientId}" class="btn btn-secondary btn-sm">
+                    🔴 Start Recording
+                </button>
+                <button class="btn btn-ghost btn-sm" title="Export Traffic">
+                    📥
+                </button>
+                <button class="btn btn-error btn-sm" title="Remove Client">
+                    🗑️
+                </button>
+            </div>
+        </div>
+        <div class="client-content">
+            <!-- Connection Parameters -->
+            ${socket.connectionParams && socket.connectionParams.length > 0 ? `
+                <div class="grid grid-cols-2 mb-4">
+                    ${socket.connectionParams.map(param => `
+                        <div class="form-group">
+                            <label class="form-label" for="param-${socketIndex}-${clientId}-${param.name}">
+                                ${param.name} ${param.required ? '<span style="color: var(--color-error)">*</span>' : ''}
+                            </label>
+                            <input 
+                                type="text" 
+                                id="param-${socketIndex}-${clientId}-${param.name}"
+                                class="form-input"
+                                placeholder="${param.description}"
+                                ${param.required ? 'required' : ''}
+                            />
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+
+            <!-- Connection Controls -->
+            <div class="flex gap-2 mb-4">
+                <button id="connect-${socketIndex}-${clientId}" class="btn btn-success">
+                    ▶️ Connect
+                </button>
+                <button id="disconnect-${socketIndex}-${clientId}" class="btn btn-error" disabled>
+                    ⏹️ Disconnect
+                </button>
+            </div>
+
+            <!-- Message Sending -->
+            <div class="message-section">
+                <div class="message-header">
+                    <div class="message-icon">💬</div>
+                    <h5 class="font-semibold">Send Message</h5>
+                </div>
+
+                ${socket.groupedMessages && socket.groupedMessages.filter(msg => msg.send).length > 0 ? `
+                    <div class="form-group">
+                        <label class="form-label">Message Template</label>
+                        <div class="flex gap-2">
+                            <select id="template-${socketIndex}-${clientId}" class="form-select" style="flex: 1;">
+                                <option value="">Select message type...</option>
+                                ${socket.groupedMessages.filter(msg => msg.send).map(msg => `
+                                    <option value="${msg.type}">${msg.type} - ${msg.description}</option>
+                                `).join('')}
+                            </select>
+                            <button class="btn btn-secondary">
+                                Load Template
+                            </button>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="form-group">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="form-label">Message Payload</label>
+                        <div class="flex gap-1">
+                            <button class="btn btn-ghost btn-sm" title="Format JSON">
+                                🎨
+                            </button>
+                            <button class="btn btn-ghost btn-sm" title="Copy">
+                                📋
+                            </button>
+                            <button class="btn btn-ghost btn-sm" title="Clear">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                    <textarea 
+                        id="message-${socketIndex}-${clientId}"
+                        class="form-input form-textarea"
+                        placeholder="Enter JSON message payload..."
+                    >{}</textarea>
+                </div>
+
+                <button id="send-${socketIndex}-${clientId}" class="btn btn-primary" disabled>
+                    📤 Send Message
+                </button>
+            </div>
+
+            <!-- Connection Log -->
+            <div class="form-group">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="form-label">Connection Log</label>
+                    <button class="btn btn-ghost btn-sm">
+                        Clear
+                    </button>
+                </div>
+                <div id="log-${socketIndex}-${clientId}" class="log-container">
+                    <div class="log-entry">
+                        <span class="log-timestamp">[${formatTimestamp()}]</span>
+                        <span class="log-info">Ready to connect...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+        // `init()` fonksiyonundan önce, eksik fonksiyonları ekle:
+
+        function connectClient(socketIndex, clientId) {
+            const socket = window.apiSpec.sockets[socketIndex];
+            const client = clients[socketIndex]?.find(c => c.id === clientId);
+            if (!client) return;
+
+            // Get connection parameters
+            const params = {};
+            if (socket.connectionParams) {
+                socket.connectionParams.forEach(param => {
+                    const input = document.getElementById(`param-${socketIndex}-${clientId}-${param.name}`);
+                    if (input) {
+                        params[param.name] = input.value;
+                    }
+                });
+            }
+
+            // Build WebSocket URL
+            let wsUrl = socket.url;
+            const queryParams = new URLSearchParams();
+            Object.entries(params).forEach(([key, value]) => {
+                if (value) queryParams.append(key, value);
+            });
+            
+            if (queryParams.toString()) {
+                wsUrl += '?' + queryParams.toString();
+            }
+
+            const fullUrl = getWsUrl(wsUrl);
+
+            // Create WebSocket connection
+            try {
+                client.ws = new WebSocket(fullUrl);
+                updateClientStatus(socketIndex, clientId, 'connecting');
+                addLog(socketIndex, clientId, 'info', 'Connecting to ' + fullUrl);
+
+                client.ws.onopen = () => {
+                    client.connected = true;
+                    updateClientStatus(socketIndex, clientId, 'connected');
+                    addLog(socketIndex, clientId, 'info', '✅ Connected successfully');
+                };
+
+                client.ws.onmessage = (event) => {
+                    addLog(socketIndex, clientId, 'in', `Received: ${event.data}`);
+                    if (client.recording) {
+                        client.trafficLog.push({
+                            timestamp: new Date().toISOString(),
+                            direction: 'in',
+                            payload: event.data
+                        });
+                    }
+                };
+
+                client.ws.onclose = (event) => {
+                    client.connected = false;
+                    client.ws = null;
+                    updateClientStatus(socketIndex, clientId, 'disconnected');
+                    addLog(socketIndex, clientId, 'info', `❌ Connection closed (Code: ${event.code})`);
+                };
+
+                client.ws.onerror = () => {
+                    addLog(socketIndex, clientId, 'error', '❌ WebSocket error occurred');
+                };
+
+            } catch (error) {
+                addLog(socketIndex, clientId, 'error', `Connection failed: ${error.message}`);
+            }
+        }
+
+        function disconnectClient(socketIndex, clientId) {
+            const client = clients[socketIndex]?.find(c => c.id === clientId);
+            if (client && client.ws) {
+                client.ws.close();
+            }
+        }
+
+        function sendMessage(socketIndex, clientId) {
+            const client = clients[socketIndex]?.find(c => c.id === clientId);
+            if (!client || !client.connected) {
+                addLog(socketIndex, clientId, 'error', 'Not connected to WebSocket');
+                return;
+            }
+
+            const messageInput = document.getElementById(`message-${socketIndex}-${clientId}`);
+            const message = messageInput.value.trim();
+
+            if (!message) {
+                addLog(socketIndex, clientId, 'error', 'Message cannot be empty');
+                return;
+            }
+
+            if (!validateJson(message)) {
+                addLog(socketIndex, clientId, 'error', 'Invalid JSON format');
+                return;
+            }
+
+            try {
+                client.ws.send(message);
+                addLog(socketIndex, clientId, 'out', `Sent: ${message}`);
+                
+                if (client.recording) {
+                    client.trafficLog.push({
+                        timestamp: new Date().toISOString(),
+                        direction: 'out',
+                        payload: message
+                    });
+                }
+            } catch (error) {
+                addLog(socketIndex, clientId, 'error', `Send failed: ${error.message}`);
+            }
+        }
+
+        function updateClientStatus(socketIndex, clientId, status) {
+            const statusElement = document.getElementById(`status-${socketIndex}-${clientId}`);
+            const connectButton = document.getElementById(`connect-${socketIndex}-${clientId}`);
+            const disconnectButton = document.getElementById(`disconnect-${socketIndex}-${clientId}`);
+            const sendButton = document.getElementById(`send-${socketIndex}-${clientId}`);
+
+            if (statusElement) {
+                const indicator = statusElement.querySelector('.status-indicator');
+                const text = statusElement.querySelector('.status-text');
+
+                indicator.className = `status-indicator status-${status}`;
+                
+                switch (status) {
+                    case 'connected':
+                        text.textContent = 'Connected';
+                        connectButton.disabled = true;
+                        disconnectButton.disabled = false;
+                        sendButton.disabled = false;
+                        break;
+                    case 'connecting':
+                        text.textContent = 'Connecting...';
+                        connectButton.disabled = true;
+                        disconnectButton.disabled = false;
+                        sendButton.disabled = true;
+                        break;
+                    case 'disconnected':
+                        text.textContent = 'Disconnected';
+                        connectButton.disabled = false;
+                        disconnectButton.disabled = true;
+                        sendButton.disabled = true;
+                        break;
+                }
+            }
+        }
+
+        function addLog(socketIndex, clientId, type, message) {
+            const logContainer = document.getElementById(`log-${socketIndex}-${clientId}`);
+            if (!logContainer) return;
+
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const timestamp = document.createElement('span');
+            timestamp.className = 'log-timestamp';
+            timestamp.textContent = `[${formatTimestamp()}]`;
+            
+            const content = document.createElement('span');
+            content.className = `log-${type}`;
+            content.textContent = message;
+            
+            logEntry.appendChild(timestamp);
+            logEntry.appendChild(content);
+            logContainer.appendChild(logEntry);
+            
+            // Auto-scroll to bottom
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function toggleRecording(socketIndex, clientId) {
+            const client = clients[socketIndex]?.find(c => c.id === clientId);
+            if (!client) return;
+
+            client.recording = !client.recording;
+            const button = document.getElementById(`record-${socketIndex}-${clientId}`);
+            
+            if (client.recording) {
+                button.textContent = '⏹️ Stop Recording';
+                button.classList.add('btn-error');
+                button.classList.remove('btn-secondary');
+                addLog(socketIndex, clientId, 'info', 'Started recording traffic');
+            } else {
+                button.textContent = '🔴 Start Recording';
+                button.classList.add('btn-secondary');
+                button.classList.remove('btn-error');
+                addLog(socketIndex, clientId, 'info', 'Stopped recording traffic');
+            }
+        }
+
+        function exportTraffic(socketIndex, clientId) {
+            const client = clients[socketIndex]?.find(c => c.id === clientId);
+            if (!client || client.trafficLog.length === 0) {
+                addLog(socketIndex, clientId, 'error', 'No traffic data to export');
+                return;
+            }
+
+            const blob = new Blob([JSON.stringify(client.trafficLog, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `websocket-traffic-${clientId}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            addLog(socketIndex, clientId, 'info', 'Traffic data exported');
+        }
+
+        function loadTemplate(socketIndex, clientId) {
+            const socket = window.apiSpec.sockets[socketIndex];
+            const select = document.getElementById(`template-${socketIndex}-${clientId}`);
+            const messageInput = document.getElementById(`message-${socketIndex}-${clientId}`);
+            
+            const selectedType = select.value;
+            if (!selectedType) return;
+
+            const messageType = socket.groupedMessages?.find(msg => msg.type === selectedType);
+            if (messageType && messageType.send && messageType.send.example) {
+                const template = JSON.stringify(messageType.send.example, null, 2);
+                messageInput.value = template;
+                addLog(socketIndex, clientId, 'info', `Template loaded: ${selectedType}`);
+            }
+        }
+
+        function formatJson(socketIndex, clientId) {
+            const messageInput = document.getElementById(`message-${socketIndex}-${clientId}`);
+            try {
+                const parsed = JSON.parse(messageInput.value);
+                messageInput.value = JSON.stringify(parsed, null, 2);
+                addLog(socketIndex, clientId, 'info', 'JSON formatted');
+            } catch {
+                addLog(socketIndex, clientId, 'error', 'Invalid JSON - cannot format');
+            }
+        }
+
+        function copyMessage(socketIndex, clientId) {
+            const messageInput = document.getElementById(`message-${socketIndex}-${clientId}`);
+            navigator.clipboard.writeText(messageInput.value).then(() => {
+                addLog(socketIndex, clientId, 'info', 'Message copied to clipboard');
+            }).catch(() => {
+                addLog(socketIndex, clientId, 'error', 'Failed to copy message');
+            });
+        }
+
+        function clearMessage(socketIndex, clientId) {
+            const messageInput = document.getElementById(`message-${socketIndex}-${clientId}`);
+            messageInput.value = '{}';
+            addLog(socketIndex, clientId, 'info', 'Message cleared');
+        }
+
+        function clearLog(socketIndex, clientId) {
+            const logContainer = document.getElementById(`log-${socketIndex}-${clientId}`);
+            if (logContainer) {
+                logContainer.innerHTML = '';
+                addLog(socketIndex, clientId, 'info', 'Log cleared');
+            }
+        }
+
+        function copyYaml() {
+            fetch('/wsapi.yaml')
+                .then(r => r.text())
+                .then(txt => {
+                    navigator.clipboard.writeText(txt).then(() => {
+                        showNotification('YAML copied to clipboard!', 'success');
+                    });
+                })
+                .catch(() => {
+                    showNotification('Failed to copy YAML', 'error');
+                });
+        }
+
+        function downloadYaml() {
+            fetch('/wsapi.yaml')
+                .then(r => r.text())
+                .then(txt => {
+                    const blob = new Blob([txt], { type: 'text/yaml' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'wsapi.yaml';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                })
+                .catch(() => {
+                    showNotification('Failed to download YAML', 'error');
+                });
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type}`;
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '80px';
+            notification.style.right = '1rem';
+            notification.style.zIndex = '1001';
+            notification.style.minWidth = '300px';
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function renderAPI(spec) {
+            // Store spec globally for client functions
+            window.apiSpec = spec;
+
+            // Render API info header
+            const info = spec.info || {};
+            const apiInfoEl = document.getElementById('api-info');
+            apiInfoEl.innerHTML = `
+                <div class="header-content">
+                    <div class="header-info">
+                        <h1 class="header-title">${info.title || 'WebSocket API Documentation'}</h1>
+                        <p class="header-description">${info.description || ''}</p>
+                        <div class="header-meta">
+                            <span><strong>Version:</strong> ${info.version || ''}</span>
+                            ${info.contact && (info.contact.name || info.contact.email) ? `<span><strong>Contact:</strong> ${info.contact.name || ''}${info.contact.email ? ' <' + info.contact.email + '>' : ''}</span>` : ''}
+                            ${info.license && (info.license.name || info.license.url) ? `<span><strong>License:</strong> ${info.license.url ? `<a href='${info.license.url}' target='_blank' style='color:white;text-decoration:underline;'>${info.license.name || info.license.url}</a>` : info.license.name}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="copyYaml()">
+                            📋 Copy YAML
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="downloadYaml()">
+                            📥 Download
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const container = document.getElementById('api-groups');
+            
+            if (!spec.sockets || !spec.sockets.length) {
+                container.innerHTML = '<div class="alert alert-info">No WebSocket endpoints found.</div>';
+                return;
+            }
+
+            // Group sockets by group
+            const groupedSockets = {};
+            spec.sockets.forEach((socket, index) => {
+                const group = socket.group || 'Ungrouped';
+                if (!groupedSockets[group]) {
+                    groupedSockets[group] = [];
+                }
+                groupedSockets[group].push({ socket, index });
+            });
+
+            container.innerHTML = Object.entries(groupedSockets).map(([groupName, sockets]) => `
+                <div class="group card">
+                    <div class="group-header" onclick="toggleGroup('${groupName}')">
+                        <div class="collapser" id="group-icon-${groupName}">▶</div>
+                        <h2 class="group-title">${groupName}</h2>
+                        <div class="badge">${sockets.length} endpoints</div>
+                    </div>
+                    <div id="group-content-${groupName}" class="group-content">
+                        ${sockets.map(({ socket, index }) => renderSocket(socket, index, groupName)).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            // Auto-expand first group
+            const firstGroup = Object.keys(groupedSockets)[0];
+            if (firstGroup) {
+                setTimeout(() => toggleGroup(firstGroup), 100);
+            }
+        }
+
+        function renderSocket(socket, index, groupName) {
+            const socketId = `${groupName}-${index}`;
+            const icon = getSocketIcon(socket.name);
+
+            return `
+                <div class="socket">
+                    <div class="socket-header" onclick="toggleSocket('${socketId}')">
+                        <div class="collapser" id="socket-icon-${socketId}">▶</div>
+                        <div class="socket-icon">${icon}</div>
+                        <div class="socket-info">
+                            <div class="socket-name">${socket.name}</div>
+                            <div class="socket-url">${socket.url}</div>
+                        </div>
+                        <div class="socket-tags">
+                            ${(socket.tags || []).map(tag => `<span class="badge">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                    <div id="socket-content-${socketId}" class="socket-content">
+                        ${renderSocketContent(socket, index)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSocketContent(socket, index) {
+            return `
+                <!-- Description -->
+                ${socket.description ? `<p class="mb-4 card-description">${socket.description}</p>` : ''}
+
+                <!-- Connection Parameters -->
+                ${socket.connectionParams && socket.connectionParams.length > 0 ? `
+                    <div class="mb-4">
+                        <h4 class="font-semibold mb-3">Connection Parameters</h4>
+                        <div class="grid gap-2">
+                            ${socket.connectionParams.map(param => `
+                                <div class="flex items-center gap-2 text-sm">
+                                    <span class="badge ${param.required ? 'badge-error' : ''}">${param.name}</span>
+                                    <span class="card-description">${param.type} • ${param.in} • ${param.description}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Messages -->
+                <div class="mb-4">
+                    <button class="btn btn-secondary btn-sm mb-3" onclick="toggleMessages(this)">Show Messages</button>
+                    <div style="display:none">
+                        ${socket.groupedMessages && socket.groupedMessages.length > 0 ? `
+                            <div class="grid gap-4">
+                                ${socket.groupedMessages.map(msg => `
+                                    <div class="card" style="border-left: 4px solid var(--color-primary);">
+                                        <div class="card-header">
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <span class="badge badge-primary">${msg.type}</span>
+                                                ${msg.send ? '<span class="badge badge-success">Send</span>' : ''}
+                                                ${msg.receive ? '<span class="badge" style="background: #dbeafe; color: #1e40af;">Receive</span>' : ''}
+                                            </div>
+                                            <p class="card-description">${msg.description}</p>
+                                        </div>
+                                        <div class="card-content">
+                                            <button class="btn btn-ghost btn-sm mb-3" onclick="toggleExample(this)">Show Payload & Example</button>
+                                            <div style="display:none">
+                                                ${msg.send ? `
+                                                    <div class="mb-4">
+                                                        <h5 class="font-medium mb-2" style="color: var(--color-accent);">Send Payload</h5>
+                                                        <div class="code-block">${JSON.stringify(msg.send.payload, null, 2)}</div>
+                                                        ${msg.send.example ? `
+                                                            <h5 class="font-medium mb-2 mt-3" style="color: var(--color-accent);">Send Example</h5>
+                                                            <div class="code-block">${JSON.stringify(msg.send.example, null, 2)}</div>
+                                                        ` : ''}
+                                                    </div>
+                                                ` : ''}
+                                                ${msg.receive ? `
+                                                    <div>
+                                                        <h5 class="font-medium mb-2" style="color: var(--color-primary);">Receive Payload</h5>
+                                                        <div class="code-block">${JSON.stringify(msg.receive.payload, null, 2)}</div>
+                                                        ${msg.receive.example ? `
+                                                            <h5 class="font-medium mb-2 mt-3" style="color: var(--color-primary);">Receive Example</h5>
+                                                            <div class="code-block">${JSON.stringify(msg.receive.example, null, 2)}</div>
+                                                        ` : ''}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<div class="alert alert-info">No messages defined for this endpoint.</div>'}
+                    </div>
+                </div>
+
+                <!-- Playground -->
+                <div>
+                    <h4 class="font-semibold mb-3">Playground</h4>
+                    <div class="card" style="border: 2px dashed var(--color-border);">
+                        <div class="card-content">
+                            <div class="tabs">
+                                <div class="tab-list">
+                                    <button class="tab-button" data-tab-button-group="playground-${index}" data-tab="example" onclick="switchTab('playground-${index}', 'example')">Example</button>
+                                    <button class="tab-button active" data-tab-button-group="playground-${index}" data-tab="test" onclick="switchTab('playground-${index}', 'test')">Test</button>
+                                </div>
+                                <div id="playground-${index}-example" class="tab-content" data-tab-group="playground-${index}">
+                                    <div class="code-block" style="height: 200px;">
+                                        ${JSON.stringify(socket.groupedMessages?.[0]?.send?.example || {}, null, 2)}
+                                    </div>
+                                </div>
+                                <div id="playground-${index}-test" class="tab-content active" data-tab-group="playground-${index}">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h5 class="font-medium">WebSocket Clients</h5>
+                                        <button class="btn btn-success btn-sm" onclick="addClient(${index})">
+                                            ➕ Add Client
+                                        </button>
+                                    </div>
+                                    <div id="clients-${index}">
+                                        <div class="alert alert-info">
+                                            No clients connected. Add a client to start testing this WebSocket endpoint.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize the application
+        function init() {
+            initTheme();
+            
+            // Load YAML and render API
+            fetch('/wsapi.yaml')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(yamlText => {
+                    const spec = jsyaml.load(yamlText);
+                    renderAPI(spec);
+                })
+                .catch(error => {
+                    console.error('Error loading YAML:', error);
+                    document.getElementById('api-info').innerHTML = `
+                        <div class="alert alert-error">
+                            <strong>Error loading WebSocket API specification:</strong><br>
+                            ${error.message}<br><br>
+                            Please ensure that <code>wsapi.yaml</code> file exists and is accessible.
+                        </div>
+                    `;
+                });
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
-</html> 
+</html>
